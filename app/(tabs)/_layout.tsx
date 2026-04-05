@@ -1,35 +1,75 @@
-import { Tabs } from 'expo-router';
 import React from 'react';
+import { StyleSheet, Platform } from 'react-native';
+import { withLayoutContext } from 'expo-router';
+import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
+import { Home, PlusSquare, User } from 'lucide-react-native';
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+const MaterialTopTabs = createMaterialTopTabNavigator();
+const SwipeableTabs = withLayoutContext(MaterialTopTabs.Navigator);
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
-    <Tabs
+    <SwipeableTabs
+      tabBarPosition="bottom"
+      
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-        }}
+        swipeEnabled: true,
+        
+        tabBarStyle: styles.navBar,
+        tabBarActiveTintColor: 'white',
+        tabBarInactiveTintColor: '#71717a',
+        
+        tabBarIndicatorStyle: { backgroundColor: 'transparent' },
+        
+        tabBarShowIcon: true,
+        tabBarLabelStyle: styles.navText,
+      }}
+    >
+      <SwipeableTabs.Screen 
+        name="feed" 
+        options={{ 
+          title: 'Feed', 
+          tabBarIcon: ({ color }: { color: string }) => <Home size={24} color={color} /> 
+        }} 
       />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-        }}
+      
+      <SwipeableTabs.Screen 
+        name="post/post" 
+        options={{ 
+          title: 'Post', 
+          tabBarIcon: ({ color }: { color: string }) => <PlusSquare size={24} color={color} /> 
+        }} 
       />
-    </Tabs>
+      
+      <SwipeableTabs.Screen 
+        name="profile" 
+        options={{ 
+          title: 'Profile', 
+          tabBarIcon: ({ color }: { color: string }) => <User size={24} color={color} /> 
+        }} 
+      />
+    </SwipeableTabs>
   );
+}
+
+const styles = StyleSheet.create({
+  navBar: { 
+    backgroundColor: '#09090b', 
+    borderTopWidth: 0.5, 
+    borderTopColor: '#27272a',
+    paddingBottom: Platform.OS === 'ios' ? 20 : 10,
+    paddingTop: 10,
+    height: Platform.OS === 'ios' ? 90 : 120,
+  },
+  navText: {
+    fontSize: 10,
+    textTransform: 'none',
+    marginTop: 4,
+  }
+});
+
+export function currencySymbol() {
+  const locale = Intl.NumberFormat().resolvedOptions().locale;
+  const currency = Intl.NumberFormat(locale, { style: 'currency', currency: 'USD' }).formatToParts(0).find(part => part.type === 'currency');
+  return currency ? currency.value : '$';
 }
