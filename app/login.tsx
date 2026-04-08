@@ -1,7 +1,11 @@
+import * as AuthSession from 'expo-auth-session';
 import { router } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Button, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { supabase } from './lib/supabase';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -27,16 +31,30 @@ export default function LoginScreen() {
 
   // --- NEW: Google Sign In ---
   async function signInWithGoogle() {
-    setLoading(true);
-    // Note: On mobile, OAuth requires additional deep-linking setup. 
-    // This will open a web browser to auth by default.
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-    });
+  setLoading(true);
+  const redirectTo = AuthSession.makeRedirectUri({ scheme: 'app' });
 
-    if (error) Alert.alert('Error', error.message);
-    setLoading(false);
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo,
+      skipBrowserRedirect: true,
+    },
+  });
+
+  if (error) { Alert.alert('Error', error.message); setLoading(false); return; }
+
+  const result = await WebBrowser.openAuthSessionAsync(data.url!, redirectTo);
+
+  if (result.type === 'success') {
+    const url = result.url;
+    const { data: sessionData, error: sessionError } = await supabase.auth.exchangeCodeForSession(
+      new URL(url).searchParams.get('code')!
+    );
+    if (!sessionError) router.replace('/(tabs)/feed');
   }
+  setLoading(false);
+}
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>

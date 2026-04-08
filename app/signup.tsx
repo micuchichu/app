@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
-import { 
-  StyleSheet, Text, View, TextInput, TouchableOpacity, 
-  KeyboardAvoidingView, Platform, Alert, ActivityIndicator, ScrollView
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView, Platform,
+  ScrollView,
+  StyleSheet, Text,
+  TextInput, TouchableOpacity,
+  View
 } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ArrowLeft, ArrowRight, Check } from 'lucide-react-native';
-import { supabase } from './lib//supabase';
 import { router } from 'expo-router';
+import { ArrowLeft, ArrowRight, Check } from 'lucide-react-native';
+import { supabase } from './lib/supabase';
 
 const TOTAL_STEPS = 4;
 

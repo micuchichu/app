@@ -1,5 +1,4 @@
 import { Session } from '@supabase/supabase-js';
-import * as Linking from 'expo-linking';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
@@ -10,7 +9,7 @@ export default function RootLayout() {
   const [isInitialized, setIsInitialized] = useState(false); // <-- NEW STATE
   const router = useRouter();
   const segments = useSegments();
-  const url = Linking.useURL()
+
 
   useEffect(() => {
     // 1. Check current session on mount
