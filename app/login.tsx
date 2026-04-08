@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
-import { supabase } from './lib/supabase';
 import { router } from 'expo-router';
+import React, { useState } from 'react';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { supabase } from './lib/supabase';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
