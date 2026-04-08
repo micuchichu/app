@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Platform, ActivityIndicator, Alert } from 'react-native';
-import { User, Settings, Star, Briefcase, LogOut } from 'lucide-react-native';
+import { User, Settings, Star, Briefcase, LogOut, Lock } from 'lucide-react-native';
 import { supabase } from '../lib/supabase'; // Adjust path to your supabase.ts file
 import { router } from 'expo-router';
 
 export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<any>(null);
+  const [isGuest, setIsGuest] = useState(false);
 
   // Fetch the user data when the screen loads
   useEffect(() => {
@@ -17,6 +18,12 @@ export default function ProfileScreen() {
     setLoading(true);
     const { data: { user }, error } = await supabase.auth.getUser();
     
+    if (user?.is_anonymous || !user?.email) {
+      setIsGuest(true);
+    } else if (user) {
+      setUserData(user);
+    }
+
     if (error) {
       console.log("Error fetching user:", error);
     } else if (user) {
@@ -40,6 +47,22 @@ export default function ProfileScreen() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#8b5cf6" />
+      </View>
+    );
+  }
+
+    if (isGuest) {
+    return (
+      <View style={[styles.screenContainer, { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 }]}>
+        <View style={styles.restrictedCircle}>
+          <Lock size={40} color="#a1a1aa" />
+        </View>
+        <Text style={styles.restrictedHeader}>Account Required</Text>
+        <Text style={styles.restrictedSub}>You need to be logged in to view and edit your profile.</Text>
+        
+        <TouchableOpacity style={styles.primaryButton} onPress={handleSignOut}>
+          <Text style={styles.submitBtnText}>Log In / Sign Up</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -112,6 +135,7 @@ export default function ProfileScreen() {
   );
 }
 
+
 const styles = StyleSheet.create({
   loadingContainer: { flex: 1, backgroundColor: 'black', justifyContent: 'center', alignItems: 'center' },
   screenContainer: { flex: 1, backgroundColor: 'black', padding: 20, paddingTop: Platform.OS === 'android' ? 60 : 60 },
@@ -141,5 +165,12 @@ const styles = StyleSheet.create({
   activityTextContainer: { marginLeft: 15, flex: 1 },
   activityTitle: { color: 'white', fontWeight: 'bold', marginBottom: 2 },
   activitySubtitle: { color: '#a1a1aa', fontSize: 12 },
-  activityStatus: { color: '#fbbf24', fontSize: 12, fontWeight: 'bold' }
+  activityStatus: { color: '#fbbf24', fontSize: 12, fontWeight: 'bold' },
+
+  // Guest Restricted Styles
+  restrictedCircle: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#18181b', justifyContent: 'center', alignItems: 'center', marginBottom: 25, borderWidth: 1, borderColor: '#27272a' },
+  restrictedHeader: { color: 'white', fontSize: 24, fontWeight: 'bold', marginBottom: 10, textAlign: 'center' },
+  restrictedSub: { color: '#a1a1aa', fontSize: 16, textAlign: 'center', marginBottom: 35, lineHeight: 22 },
+  primaryButton: { backgroundColor: '#2563eb', padding: 18, borderRadius: 12, alignItems: 'center', width: '100%' },
+  submitBtnText: { color: 'white', fontWeight: 'bold', fontSize: 16 }
 });
