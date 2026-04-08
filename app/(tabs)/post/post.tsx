@@ -1,23 +1,46 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { 
   StyleSheet, Text, View, TouchableOpacity, 
-  ScrollView, Animated, Dimensions, Platform, KeyboardAvoidingView
+  ScrollView, Animated, Dimensions, Platform, KeyboardAvoidingView, ActivityIndicator
 } from 'react-native';
 import type { ScrollView as ScrollViewType } from 'react-native';
+import { Lock } from 'lucide-react-native';
 import { RequestTab } from './request';
 import { HireTab } from './hire';
+import { supabase } from '../../lib/supabase'; // Make sure this path is correct
 
 const screenWidth = Dimensions.get('window').width;
 const contentWidth = screenWidth - 40;
 
 export default function PostScreen() {
   const [activeTab, setActiveTab] = useState('hire');
+  
+  // --- AUTH STATE ---
+  const [isGuest, setIsGuest] = useState(false);
+  const [loadingAuth, setLoadingAuth] = useState(true);
 
   const scrollViewRef = useRef<ScrollViewType>(null);
-
   const scrollX = useRef(new Animated.Value(0)).current;
 
-  const toggle = (tab : 'hire' | 'request') => {
+  // --- CHECK GUEST STATUS ---
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      // If the user has no email or is flagged as anonymous, they are a guest
+      if (user?.is_anonymous || !user?.email) {
+        setIsGuest(true);
+      }
+      setLoadingAuth(false);
+    };
+    checkAuth();
+  }, []);
+
+  const handleGoToLogin = async () => {
+    // Signing out kills the guest session and triggers your _layout.tsx to send them to the login screen
+    await supabase.auth.signOut();
+  };
+
+  const toggle = (tab: 'hire' | 'request') => {
     setActiveTab(tab);
     const isRequest = tab === 'request';
     scrollViewRef.current?.scrollTo({ x: isRequest ? contentWidth : 0, animated: true });
@@ -25,7 +48,6 @@ export default function PostScreen() {
 
   const onMomentumScrollEnd = (e: { nativeEvent: { contentOffset: { x: number } } }) => {
     const offsetX = e.nativeEvent.contentOffset.x;
-
     const newTab = Math.round(offsetX / contentWidth) === 0 ? 'hire' : 'request';
     if (activeTab !== newTab) {
       setActiveTab(newTab);
@@ -33,27 +55,46 @@ export default function PostScreen() {
   };
 
   const tabIndicatorDistance = (contentWidth - 8) / 2;
-  
   const indicatorTranslate = scrollX.interpolate({
     inputRange: [0, contentWidth],
     outputRange: [0, tabIndicatorDistance],
     extrapolate: 'clamp'
   });
 
+  // --- LOADING VIEW ---
+  if (loadingAuth) {
+    return (
+      <View style={[styles.screenContainer, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#8b5cf6" />
+      </View>
+    );
+  }
+
+  // --- GUEST RESTRICTED VIEW ---
+  if (isGuest) {
+    return (
+      <View style={[styles.screenContainer, { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 }]}>
+        <View style={styles.restrictedCircle}>
+          <Lock size={40} color="#a1a1aa" />
+        </View>
+        <Text style={styles.restrictedHeader}>Account Required</Text>
+        <Text style={styles.restrictedSub}>You need to be logged in to create a job posting or offer your services.</Text>
+        
+        <TouchableOpacity style={styles.primaryButton} onPress={handleGoToLogin}>
+          <Text style={styles.submitBtnText}>Log In / Sign Up</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // --- NORMAL POST VIEW ---
   return (
     <View style={styles.screenContainer}>
       <Text style={styles.screenHeader}>Create</Text>
 
-      <KeyboardAvoidingView 
-      style={{ flex: 1 }} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={styles.toggleContainer}>
-          <Animated.View
-            style={[
-              styles.toggleSlider,
-              { transform: [{ translateX: indicatorTranslate }] },
-            ]}
-          />
+          <Animated.View style={[styles.toggleSlider, { transform: [{ translateX: indicatorTranslate }] }]} />
 
           <TouchableOpacity style={styles.toggleBtn} onPress={() => toggle('hire')} activeOpacity={0.8}>
             <Text style={[styles.toggleText, activeTab === 'hire' && styles.toggleTextActive]}>Hire</Text>
@@ -65,7 +106,6 @@ export default function PostScreen() {
         </View>
 
         <ScrollView contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-          
           <Animated.ScrollView
             ref={scrollViewRef}
             horizontal
@@ -73,11 +113,7 @@ export default function PostScreen() {
             showsHorizontalScrollIndicator={false}
             scrollEventThrottle={16}
             onMomentumScrollEnd={onMomentumScrollEnd}
-            
-            onScroll={Animated.event(
-              [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-              { useNativeDriver: true }
-            )}
+            onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], { useNativeDriver: true })}
           >
             <View style={{ width: contentWidth - 10, marginRight: 5, marginLeft: 5 }}>
               <HireTab />
@@ -86,17 +122,22 @@ export default function PostScreen() {
             <View style={{ width: contentWidth - 10, marginRight: 5, marginLeft: 5 }}>
               <RequestTab />
             </View>
-
           </Animated.ScrollView>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
   );
 }
+
 export const styles = StyleSheet.create({
   screenContainer: { flex: 1, backgroundColor: 'black', paddingHorizontal: 20, paddingTop: 60 },
   screenHeader: { color: 'white', fontSize: 28, fontWeight: 'bold', marginBottom: 20 },
   
+  // --- Restricted View Styles ---
+  restrictedCircle: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#18181b', justifyContent: 'center', alignItems: 'center', marginBottom: 25, borderWidth: 1, borderColor: '#27272a' },
+  restrictedHeader: { color: 'white', fontSize: 24, fontWeight: 'bold', marginBottom: 10, textAlign: 'center' },
+  restrictedSub: { color: '#a1a1aa', fontSize: 16, textAlign: 'center', marginBottom: 35, lineHeight: 22 },
+
   // --- Toggle Styles ---
   toggleContainer: { flexDirection: 'row', backgroundColor: '#18181b', borderRadius: 25, padding: 4, marginBottom: 25, borderWidth: 1, borderColor: '#27272a' },
   toggleSlider: { position: 'absolute', top: 4, bottom: 4, left: 4, right: 4, backgroundColor: '#8b5cf6', borderRadius: 21, width: '50%'},
