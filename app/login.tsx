@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import GoogleSignInButton from '../components/GoogleSignInButton';
 import { supabase } from './lib/supabase';
 
 export default function LoginScreen() {
@@ -76,9 +77,7 @@ export default function LoginScreen() {
         </View>
 
         {/* Google Button */}
-        <TouchableOpacity style={styles.socialButton} onPress={signInWithGoogle} disabled={loading}>
-          <Text style={styles.socialBtnText}>Continue with Google</Text>
-        </TouchableOpacity>
+        <GoogleSignInButton />
 
         {/* Guest Button */}
         <TouchableOpacity style={styles.guestButton} onPress={signInAsGuest} disabled={loading}>
