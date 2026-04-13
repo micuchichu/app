@@ -3,11 +3,29 @@ import { Bookmark, Briefcase, DollarSign, Eye, MapPin, Share2, User, X } from 'l
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, Image, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import type { Job } from '../lib/ranking';
-import { getRankedJobs, trackEvent } from '../lib/ranking';
+// Note: You will need to update your lib/ranking file to accept the new Job interface as well
+import { trackEvent } from '../lib/ranking'; 
 import { supabase } from '../lib/supabase';
 
 const { height, width } = Dimensions.get('window');
+
+// --- UPDATED INTERFACE ---
+// This matches exactly what the new Supabase query will return
+export interface Job {
+  id: string;
+  title: string;
+  description: string;
+  schedule_type: string;
+  pay_amount: number;
+  pay_currency: string;
+  is_negotiable: boolean;
+  thumbnail_url: string;
+  viewCount: number; // Assuming you add this back or calculate it
+  
+  // These come from the JOINs
+  employers?: { company_name?: string } | null; 
+  cities?: { name?: string } | null;
+}
 
 const JobCard = ({ item, onApply, userId }: {
   item: Job;
@@ -24,28 +42,41 @@ const JobCard = ({ item, onApply, userId }: {
     }
   };
 
+  // Safely extract the joined data
+  const employerName = item.employers?.company_name || 'Unknown Employer';
+  const cityName = item.cities?.name || 'Remote';
+  
+  // Format the pay string based on numeric value
+  const formattedPay = `${item.is_negotiable ? 'Max ' : ''}${item.pay_amount} ${item.pay_currency}`;
+
   return (
     <View style={styles.jobCard}>
-      <Image source={{ uri: item.image }} style={styles.bgImage} />
+      <Image source={{ uri: item.thumbnail_url }} style={styles.bgImage} />
       <View style={styles.darkOverlay} />
       <View style={styles.contentOverlay}>
         <View style={styles.jobInfoContainer}>
+          
           <View style={styles.viewCountBadge}>
             <Eye size={12} color="white" />
-            <Text style={styles.viewCountText}>{item.viewCount} people viewing</Text>
+            {/* Fallback to 0 if viewCount isn't tracked yet */}
+            <Text style={styles.viewCountText}>{item.viewCount || 0} people viewing</Text>
           </View>
-          <Text style={styles.employer}>@{item.employer.replace(/\s+/g, '').toLowerCase()}</Text>
+          
+          <Text style={styles.employer}>@{employerName.replace(/\s+/g, '').toLowerCase()}</Text>
           <Text style={styles.jobTitle}>{item.title}</Text>
           <Text style={styles.description} numberOfLines={2}>{item.description}</Text>
+          
           <View style={styles.tagsRow}>
-            <View style={styles.tag}><Briefcase size={12} color="white" /><Text style={styles.tagText}>{item.type}</Text></View>
-            <View style={styles.tag}><MapPin size={12} color="white" /><Text style={styles.tagText}>{item.location}</Text></View>
+            <View style={styles.tag}><Briefcase size={12} color="white" /><Text style={styles.tagText}>{item.schedule_type}</Text></View>
+            <View style={styles.tag}><MapPin size={12} color="white" /><Text style={styles.tagText}>{cityName}</Text></View>
           </View>
+          
           <View style={styles.payRow}>
             <DollarSign size={18} color="#4ade80" />
-            <Text style={styles.payText}>{item.payAmount}</Text>
+            <Text style={styles.payText}>{formattedPay}</Text>
           </View>
         </View>
+
         <View style={styles.actionButtonsContainer}>
           <TouchableOpacity style={styles.actionIcon}>
             <View style={styles.profilePicPlaceholder}><User size={24} color="white" /></View>
@@ -59,10 +90,10 @@ const JobCard = ({ item, onApply, userId }: {
             <Text style={styles.actionText}>Share</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.applyBtnBubble, { backgroundColor: item.negotiable ? '#8b5cf6' : '#2563eb' }]}
+            style={[styles.applyBtnBubble, { backgroundColor: item.is_negotiable ? '#8b5cf6' : '#2563eb' }]}
             onPress={onApply}
           >
-            <Text style={styles.applyBtnText}>{item.negotiable ? 'BID' : 'APPLY'}</Text>
+            <Text style={styles.applyBtnText}>{item.is_negotiable ? 'BID' : 'APPLY'}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -74,8 +105,11 @@ export default function FeedScreen() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  
   const [biddingJob, setBiddingJob] = useState<Job | null>(null);
   const [bidAmount, setBidAmount] = useState('');
+  
+  // We use schedule_type to determine which feed to show
   const [feedMode, setFeedMode] = useState<'hiring' | 'toHire'>('hiring');
 
   useEffect(() => {
@@ -90,41 +124,48 @@ export default function FeedScreen() {
 
   const fetchJobs = async () => {
     setIsLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
+    
+    // --- UPDATED QUERY WITH JOINS ---
+    // This tells Supabase to grab the job, PLUS look up the employer and city attached to those IDs!
+    const { data, error } = await supabase
+      .from('job_postings')
+      .select(`
+        *,
+        employers ( company_name ),
+        cities ( name )
+      `)
+      .eq('active', true) // Only show active jobs
+      .order('created_at', { ascending: false });
 
-    if (!user) {
-      const { data, error } = await supabase
-        .from('jobs')
-        .select('*')
-        .order('timestamp', { ascending: false });
-      if (error) {
-        Alert.alert('Error fetching jobs', error.message);
-      } else {
-        const filtered = (data ?? []).filter((job: Job) =>
-          feedMode === 'hiring' ? job.type !== 'Service Request' : job.type === 'Service Request'
-        );
-        setJobs(filtered);
-      }
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const ranked = await getRankedJobs(user.id, feedMode);
-      setJobs(ranked);
-    } catch (error: any) {
+    if (error) {
       Alert.alert('Error fetching jobs', error.message);
+      console.log("Feed Error:", error);
+    } else {
+      
+      // Filter the UI based on the new schedule_type enum
+      const filtered = (data ?? []).filter((job: Job) => {
+        if (feedMode === 'hiring') {
+           // Show regular jobs
+           return job.schedule_type !== 'service_request'; 
+        } else {
+           // Show freelancers offering services
+           return job.schedule_type === 'service_request';
+        }
+      });
+      
+      setJobs(filtered);
     }
+    
     setIsLoading(false);
   };
 
   const handleApply = async (job: Job) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (job.negotiable) {
+    if (job.is_negotiable) {
       setBiddingJob(job);
     } else {
-      if (user) await trackEvent(user.id, job.id, 'apply');
-      Alert.alert('Applied!', `Your application to ${job.employer} has been sent.`);
+      if (userId) await trackEvent(userId, job.id, 'apply');
+      const employerName = job.employers?.company_name || 'the employer';
+      Alert.alert('Applied!', `Your application to ${employerName} has been sent.`);
     }
   };
 
@@ -143,6 +184,7 @@ export default function FeedScreen() {
     );
   }
 
+  // --- RENDER REMAINS EXACTLY THE SAME ---
   return (
     <View style={{ flex: 1, backgroundColor: 'black' }}>
       <SafeAreaView style={styles.topNavContainer}>
@@ -169,7 +211,8 @@ export default function FeedScreen() {
           />
         )}
         keyExtractor={item => item.id.toString()}
-        snapToInterval={height}
+        // BE CAREFUL WITH HEIGHT: Make sure your jobCard style matches this exactly!
+        snapToInterval={height} 
         snapToAlignment="start"
         decelerationRate="fast"
         disableIntervalMomentum={true}
@@ -187,7 +230,7 @@ export default function FeedScreen() {
               <X size={24} color="#71717a" />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Place your bid</Text>
-            <Text style={styles.modalSub}>{biddingJob.title} • {biddingJob.payAmount}</Text>
+            <Text style={styles.modalSub}>{biddingJob.title} • {biddingJob.pay_amount}</Text>
             <View style={styles.inputContainer}>
               <DollarSign size={20} color="white" />
               <TextInput

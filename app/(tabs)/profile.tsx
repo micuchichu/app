@@ -70,6 +70,7 @@ export default function ProfileScreen() {
   // Safely extract metadata (fallback to empty objects/strings if missing)
   const meta = userData?.user_metadata || {};
   const emailPrefix = userData?.email?.split('@')[0] || 'user';
+  const displayName = meta.full_name || emailPrefix;
   const skills: string[] = meta.skills || [];
 
   return (
@@ -85,8 +86,7 @@ export default function ProfileScreen() {
           <User size={40} color="white" />
         </View>
         
-        {/* Dynamic Name and Handle */}
-        <Text style={styles.profileName}>{emailPrefix}</Text>
+        <Text style={styles.profileName}>{displayName}</Text>
         <Text style={styles.profileHandle}>{meta.current_job || 'New Member'} • Age {meta.age || '?'}</Text>
         
         <View style={styles.statsRow}>
@@ -148,9 +148,9 @@ const styles = StyleSheet.create({
   profileHandle: { color: '#a1a1aa', fontSize: 14, marginBottom: 20, fontWeight: '500' },
   
   statsRow: { flexDirection: 'row', justifyContent: 'space-around', width: '100%', borderTopWidth: 1, borderTopColor: '#27272a', paddingTop: 20 },
-  statBox: { alignItems: 'center' },
+  statBox: { alignItems: 'center', width: '34%' },
   statNumber: { color: 'white', fontSize: 18, fontWeight: 'bold', flexDirection: 'row', alignItems: 'center' },
-  statLabel: { color: '#71717a', fontSize: 12, marginTop: 4 },
+  statLabel: { color: '#e4e4ec', fontSize: 12, marginTop: 4 },
   
   sectionTitle: { color: 'white', fontSize: 18, fontWeight: 'bold', marginBottom: 15 },
   

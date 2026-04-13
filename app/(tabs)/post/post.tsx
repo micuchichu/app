@@ -1,32 +1,22 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { 
   StyleSheet, Text, View, TouchableOpacity, 
-  ScrollView, Animated, Dimensions, Platform, KeyboardAvoidingView, ActivityIndicator
+  ScrollView, Dimensions, Platform, KeyboardAvoidingView, ActivityIndicator
 } from 'react-native';
-import type { ScrollView as ScrollViewType } from 'react-native';
-import { Lock } from 'lucide-react-native';
-import { RequestTab } from './request';
+import { InfoIcon, Lock } from 'lucide-react-native';
 import { HireTab } from './hire';
-import { supabase } from '../../lib/supabase'; // Make sure this path is correct
+import { supabase } from '../../lib/supabase';
 
 const screenWidth = Dimensions.get('window').width;
 const contentWidth = screenWidth - 40;
 
-export default function PostScreen() {
-  const [activeTab, setActiveTab] = useState('hire');
-  
-  // --- AUTH STATE ---
+export default function PostScreen() {  
   const [isGuest, setIsGuest] = useState(false);
   const [loadingAuth, setLoadingAuth] = useState(true);
 
-  const scrollViewRef = useRef<ScrollViewType>(null);
-  const scrollX = useRef(new Animated.Value(0)).current;
-
-  // --- CHECK GUEST STATUS ---
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      // If the user has no email or is flagged as anonymous, they are a guest
       if (user?.is_anonymous || !user?.email) {
         setIsGuest(true);
       }
@@ -36,32 +26,9 @@ export default function PostScreen() {
   }, []);
 
   const handleGoToLogin = async () => {
-    // Signing out kills the guest session and triggers your _layout.tsx to send them to the login screen
     await supabase.auth.signOut();
   };
 
-  const toggle = (tab: 'hire' | 'request') => {
-    setActiveTab(tab);
-    const isRequest = tab === 'request';
-    scrollViewRef.current?.scrollTo({ x: isRequest ? contentWidth : 0, animated: true });
-  };
-
-  const onMomentumScrollEnd = (e: { nativeEvent: { contentOffset: { x: number } } }) => {
-    const offsetX = e.nativeEvent.contentOffset.x;
-    const newTab = Math.round(offsetX / contentWidth) === 0 ? 'hire' : 'request';
-    if (activeTab !== newTab) {
-      setActiveTab(newTab);
-    }
-  };
-
-  const tabIndicatorDistance = (contentWidth - 8) / 2;
-  const indicatorTranslate = scrollX.interpolate({
-    inputRange: [0, contentWidth],
-    outputRange: [0, tabIndicatorDistance],
-    extrapolate: 'clamp'
-  });
-
-  // --- LOADING VIEW ---
   if (loadingAuth) {
     return (
       <View style={[styles.screenContainer, { justifyContent: 'center', alignItems: 'center' }]}>
@@ -70,7 +37,6 @@ export default function PostScreen() {
     );
   }
 
-  // --- GUEST RESTRICTED VIEW ---
   if (isGuest) {
     return (
       <View style={[styles.screenContainer, { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 }]}>
@@ -87,43 +53,16 @@ export default function PostScreen() {
     );
   }
 
-  // --- NORMAL POST VIEW ---
   return (
     <View style={styles.screenContainer}>
-      <Text style={styles.screenHeader}>Create</Text>
+      <Text style={styles.screenHeader}>Post a Job</Text>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <View style={styles.toggleContainer}>
-          <Animated.View style={[styles.toggleSlider, { transform: [{ translateX: indicatorTranslate }] }]} />
-
-          <TouchableOpacity style={styles.toggleBtn} onPress={() => toggle('hire')} activeOpacity={0.8}>
-            <Text style={[styles.toggleText, activeTab === 'hire' && styles.toggleTextActive]}>Hire</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.toggleBtn} onPress={() => toggle('request')} activeOpacity={0.8}>
-            <Text style={[styles.toggleText, activeTab === 'request' && styles.toggleTextActive]}>Request</Text>
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-          <Animated.ScrollView
-            ref={scrollViewRef}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            scrollEventThrottle={16}
-            onMomentumScrollEnd={onMomentumScrollEnd}
-            onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], { useNativeDriver: true })}
-          >
+          <ScrollView>
             <View style={{ width: contentWidth - 10, marginRight: 5, marginLeft: 5 }}>
               <HireTab />
             </View>
-
-            <View style={{ width: contentWidth - 10, marginRight: 5, marginLeft: 5 }}>
-              <RequestTab />
-            </View>
-          </Animated.ScrollView>
-        </ScrollView>
+          </ScrollView>
       </KeyboardAvoidingView>
     </View>
   );
@@ -151,7 +90,7 @@ export const styles = StyleSheet.create({
   subHeader: { color: 'white', fontSize: 20, fontWeight: 'bold', marginBottom: 20 },
   uploadBox: { height: 160, backgroundColor: '#18181b', borderRadius: 15, borderWidth: 2, borderColor: '#27272a', borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', marginBottom: 25 },
   uploadText: { color: '#71717a', marginTop: 10, fontWeight: '500' },
-  inputLabel: { color: '#e4e4e7', fontSize: 14, fontWeight: 'bold', marginBottom: 8, marginTop: 10, width: '50%' },
+  inputLabel: { color: '#e4e4e7', fontSize: 14, fontWeight: 'bold', marginBottom: 8, marginTop: 10 },
   formInput: { backgroundColor: '#18181b', color: 'white', padding: 15, borderRadius: 10, fontSize: 16, borderWidth: 1, borderColor: '#27272a' },
   
   // --- Pill/Switch Styles ---
@@ -160,9 +99,10 @@ export const styles = StyleSheet.create({
   pillActive: { backgroundColor: '#8b5cf6', borderColor: '#8b5cf6' },
   pillText: { color: '#a1a1aa', fontWeight: '600' },
   pillTextActive: { color: 'white' },
-  switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 25 },
+  switchRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10},
+  infoIcon: { marginLeft: 6, marginRight: '55%' },
   
   // --- Buttons ---
-  primaryButton: { backgroundColor: '#2563eb', padding: 18, borderRadius: 12, alignItems: 'center', marginTop: 30, width: '100%', alignSelf: 'center' },
+  primaryButton: { backgroundColor: '#8a5cf6', color: 'black', padding: 18, borderRadius: 12, alignItems: 'center', marginTop: 30, width: '100%', alignSelf: 'center' },
   submitBtnText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
 });

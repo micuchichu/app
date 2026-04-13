@@ -5,6 +5,9 @@ import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Button, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { supabase } from './lib/supabase';
 
+import { GlobalStyles } from './constants/globalStyles';
+import { Colors } from './constants/colors';
+
 WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
