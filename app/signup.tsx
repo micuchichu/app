@@ -86,10 +86,11 @@ export default function SignupScreen() {
     }
   };
 
-  const handleDateChange = (event: any, selectedDate?: Date) => {
-    if (Platform.OS === 'android') setShowDatePicker(false);
-    if (selectedDate) { setBirthDate(selectedDate); setHasSelectedDate(true); markTouched('birthDate'); }
-  };
+  const handleDateChange = (selectedDate: Date) => {
+      setBirthDate(selectedDate); 
+      setHasSelectedDate(true); 
+      markTouched('birthDate'); 
+    };
 
   const confirmMapLocation = async () => {
     locManager.setIsGettingLocation(true);

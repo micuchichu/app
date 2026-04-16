@@ -23,7 +23,6 @@ export function useSignupData() {
       if (skillsResponse.data) setDbSkills(skillsResponse.data);
       
       if (countriesResponse.data) {
-        // Filter unique countries to prevent FlatList key errors
         const uniqueCountries = countriesResponse.data.reduce((acc: CountryRecord[], current) => {
           if (!acc.find(item => item.code === current.code)) return acc.concat([current]);
           return acc;
