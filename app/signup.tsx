@@ -12,6 +12,7 @@ import { useLocationManager } from './hooks/locationManager';
 import { useSignupData, CountryRecord } from './hooks/signupData';
 import { MapPickerModal } from './components/mapPickerModal';
 import { CountryPickerModal } from './components/countryPickerModal';
+import { DatePickerModal } from './components/datePickerModal';
 
 const TOTAL_STEPS = 3;
 
@@ -145,14 +146,23 @@ export default function SignupScreen() {
             
             <TextInput style={[styles.input, getInputStyle(isNameError)]} placeholder="Full Name (e.g. Jane Doe)" placeholderTextColor="#71717a" value={fullName} onChangeText={setFullName} onBlur={() => markTouched('fullName')} />
             
-            <TouchableOpacity style={[styles.input, { marginTop: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, getInputStyle(isDateError)]} onPress={() => { setShowDatePicker(true); markTouched('birthDate'); }}>
-              <Text style={{ color: hasSelectedDate ? 'white' : '#71717a', fontSize: 20 }}>{hasSelectedDate ? birthDate.toLocaleDateString() : "Birth Date"}</Text>
-              <CalendarIcon size={20} color="#71717a" />
+            <TouchableOpacity 
+              style={[styles.input, { marginTop: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, getInputStyle(isDateError)]} 
+              onPress={() => { setShowDatePicker(true); markTouched('birthDate'); }}
+            >
+              <Text style={{ color: hasSelectedDate ? 'white' : '#71717a', fontSize: 20 }}>
+                {hasSelectedDate ? birthDate.toLocaleDateString() : "Birth Date"}
+              </Text>
+              <CalendarIcon size={20} color={hasSelectedDate ? 'white' : '#71717a'} />
             </TouchableOpacity>
 
-            {showDatePicker && <DateTimePicker value={birthDate} mode="date" display={Platform.OS === 'ios' ? 'spinner' : 'default'} onChange={handleDateChange} maximumDate={new Date()} />}
-            {Platform.OS === 'ios' && showDatePicker && <TouchableOpacity style={{ alignSelf: 'flex-end', marginTop: 10 }} onPress={() => setShowDatePicker(false)}><Text style={{ color: '#8b5cf6', fontWeight: 'bold' }}>Done</Text></TouchableOpacity>}
-
+            <DatePickerModal 
+              visible={showDatePicker}
+              date={birthDate}
+              onClose={() => setShowDatePicker(false)}
+              onChange={handleDateChange}
+            />
+            
             <View style={{ flexDirection: 'row', marginTop: 15, gap: 10 }}>
               <TouchableOpacity style={[styles.input, { width: 130, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 15 }, getInputStyle(isPhoneError)]} onPress={() => setIsCountryModalOpen(true)}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -180,7 +190,6 @@ export default function SignupScreen() {
               <MapIcon size={20} color="#71717a" />
             </TouchableOpacity>
 
-            {/* --- REUSABLE MODALS RENDERED HERE --- */}
             <MapPickerModal visible={isMapModalOpen} region={mapRegion} onRegionChange={setMapRegion} onClose={() => setIsMapModalOpen(false)} onConfirm={confirmMapLocation} />
             
             <CountryPickerModal 

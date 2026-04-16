@@ -12,7 +12,6 @@ export const CountryPickerModal = ({
 }: any) => {
     const [searchQuery, setSearchQuery] = useState('');
 
-    // Filters the list automatically when searchQuery changes
     const filteredList = useMemo(() => {
         return countryList.filter((country: any) => 
             country.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -22,7 +21,7 @@ export const CountryPickerModal = ({
 
     const handleClose = () => {
         onClose();
-        setSearchQuery(''); // Reset search when closing
+        setSearchQuery('');
     };
 
     return (

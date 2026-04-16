@@ -23,7 +23,6 @@ export default function LoginScreen() {
     setLoading(false);
   }
 
-  // --- NEW: Guest Sign In ---
   async function signInAsGuest() {
     setLoading(true);
     const { error } = await supabase.auth.signInAnonymously();
@@ -32,7 +31,6 @@ export default function LoginScreen() {
     setLoading(false);
   }
 
-  // --- NEW: Google Sign In ---
   async function signInWithGoogle() {
   setLoading(true);
   const redirectTo = AuthSession.makeRedirectUri({ scheme: 'app' });
@@ -96,15 +94,14 @@ export default function LoginScreen() {
           <View style={styles.dividerLine} />
         </View>
 
-        {/* Google Button */}
-          <Button title="Sign in with Google" onPress={signInWithGoogle} />
+        <TouchableOpacity style={styles.socialButton} onPress={signInWithGoogle} disabled={loading}>
+          <Text style={styles.socialBtnText}>Sign in with Google</Text>
+        </TouchableOpacity>
 
-        {/* Guest Button */}
         <TouchableOpacity style={styles.guestButton} onPress={signInAsGuest} disabled={loading}>
           <Text style={styles.guestBtnText}>Continue as Guest</Text>
         </TouchableOpacity>
 
-        {/* Create Account Link */}
         <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push('/signup')} disabled={loading}>
           <Text style={styles.secondaryBtnText}>Don't have an account? Create one</Text>
         </TouchableOpacity>

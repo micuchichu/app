@@ -3,8 +3,6 @@ import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert, ActivityInd
 import { Camera, ChevronDown, Map as MapIcon, MapPinnedIcon, MapPin, InfoIcon, X } from 'lucide-react-native';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system';
-import { decode } from 'base64-arraybuffer';
 
 import { supabase } from '../../lib/supabase';
 import { currencySymbol } from '../_layout';
@@ -24,10 +22,11 @@ export function HireTab() {
     const [peopleNeeded, setPeopleNeeded] = useState('1');
     const [workMode, setWorkMode] = useState('Online');
     
-    // --- MEDIA STATE ---
     const [media, setMedia] = useState<ImagePicker.ImagePickerAsset | null>(null);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [uploadStatus, setUploadStatus] = useState('');
+    
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isMapModalOpen, setIsMapModalOpen] = useState(false);
     const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
@@ -36,12 +35,11 @@ export function HireTab() {
 
     const locManager = useLocationManager();
 
-    // --- 1. PICK MEDIA FROM GALLERY ---
     const pickMedia = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.All, // Allows images & video
+            mediaTypes: ['images', 'videos'], 
             allowsEditing: true,
-            quality: 0.7, // Compress slightly for faster mobile uploads
+            quality: 0.7, 
         });
 
         if (!result.canceled) {
@@ -49,29 +47,25 @@ export function HireTab() {
         }
     };
 
-    // --- 2. UPLOAD MEDIA TO SUPABASE ---
-    const uploadMedia = async (uri: string, type: 'image' | 'video' | undefined) => {
-        try {
-            // Read the file as a base64 string
-            const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
-            
-            // Create a unique filename
-            const ext = type === 'video' ? 'mp4' : 'jpg';
+    const uploadMedia = async (uri: string, mimeType: string | null | undefined) => {
+    try {
+            const isVideo = mimeType === 'video';
+            const ext = isVideo ? 'mp4' : 'jpg';
             const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
-            const filePath = `${fileName}`;
-            const contentType = type === 'video' ? 'video/mp4' : 'image/jpeg';
+            const contentType = isVideo ? 'video/mp4' : 'image/jpeg';
 
-            // Upload to Supabase using the base64 decoder
-            const { data, error } = await supabase.storage
-                .from('job-media') // Ensure this bucket exists and is public!
-                .upload(filePath, decode(base64), { contentType });
+            const response = await fetch(uri);
+            const blob = await response.blob();
+
+            const { error } = await supabase.storage
+                .from('job-media') 
+                .upload(fileName, blob, { contentType });
 
             if (error) throw error;
 
-            // Get the public URL to save in our database
             const { data: publicUrlData } = supabase.storage
                 .from('job-media')
-                .getPublicUrl(filePath);
+                .getPublicUrl(fileName);
 
             return publicUrlData.publicUrl;
         } catch (error) {
@@ -103,13 +97,15 @@ export function HireTab() {
         }
 
         setIsSubmitting(true);
+        setUploadStatus('Saving location...');
+
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) { Alert.alert("Error", "You must be logged in."); setIsSubmitting(false); return; }
 
         let finalLocationId = locManager.selectedLocId;
 
         if (locManager.gpsData) {
-            const { data: newLoc, error: locError } = await supabase.from('location')
+            const { data: newLoc, error: locError } = await supabase.from('locations')
                 .insert([{ 
                     city_name: locManager.gpsData.city_name, 
                     country_code: locManager.gpsData.country_code, 
@@ -117,36 +113,60 @@ export function HireTab() {
                     longitude: locManager.gpsData.longitude 
                 }]).select('id').single();
 
-            if (locError || !newLoc) { Alert.alert("Location Error", "Could not save location."); setIsSubmitting(false); return; }
+            if (locError) { 
+                Alert.alert("Supabase Error", locError.message); 
+                console.log("DB ERROR:", locError);
+                setIsSubmitting(false); 
+                return; 
+            }
+            if (!newLoc) {
+                Alert.alert("Location Error", "Location saved, but database didn't return an ID.");
+                setIsSubmitting(false);
+                return;
+            }
             finalLocationId = newLoc.id;
         }
 
-        // --- 3. HANDLE MEDIA UPLOAD BEFORE DB INSERT ---
-        let finalMediaUrl = "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80"; // Fallback placeholder
-    
+        let finalThumbnailUrl = "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80"; // Fallback
+        let finalVideoUrl = null;
 
         if (media) {
+            setUploadStatus('Uploading media...');
             const uploadedUrl = await uploadMedia(media.uri, media.type);
+            
             if (uploadedUrl) {
-                finalMediaUrl = uploadedUrl;
+                if (media.type === 'video') {
+                    finalVideoUrl = uploadedUrl;
+                } else {
+                    finalThumbnailUrl = uploadedUrl;
+                }
             } else {
                 Alert.alert("Upload Failed", "Could not upload your media. Proceeding with placeholder.");
             }
         }
 
+        setUploadStatus('Posting job...');
+
         const cleanPay = parseFloat(payAmount.replace(/[^0-9.]/g, ''));
         const { error: jobError } = await supabase.from('job_postings').insert([{
-            employer_id: user.id, title, description,
-            work_mode: { 'Online': 0, 'Hybrid': 1, 'On-site': 2 }[workMode] ?? 0, 
-            schedule_type: { 'Microjob': 0, 'Part-time': 1, 'Full-time': 2 }[scheduleType] ?? 0,
-            pay_amount: isNaN(cleanPay) ? 0 : cleanPay, pay_currency: currencySymbol(),
-            is_negotiable: isNegotiable, people_needed: parseInt(peopleNeeded) || 1, 
-            is_sponsored: false, active: true, save_count: 0,
-            thumbnail_url: finalMediaUrl, // <-- Inserting the real URL!
-            location_id: finalLocationId 
+            employer_id: user.id, 
+            title, 
+            description,
+            work_mode: workMode.toLowerCase(),
+            schedule_type: scheduleType.toLowerCase(),
+            pay_amount: isNaN(cleanPay) ? 0 : cleanPay,
+            pay_currency: currencySymbol(),
+            is_negotiable: isNegotiable, 
+            people_needed: parseInt(peopleNeeded) || 1, 
+            is_sponsored: false, 
+            active: true, 
+            thumbnail_url: finalThumbnailUrl,
+            video_url: finalVideoUrl,
+            job_location_id: finalLocationId 
         }]);
 
         setIsSubmitting(false);
+        setUploadStatus('');
 
         if (jobError) Alert.alert("Database Error", jobError.message);
         else {
@@ -158,7 +178,6 @@ export function HireTab() {
 
     return (
         <View style={styles.formSection}>            
-            {/* --- DYNAMIC MEDIA BOX --- */}
             {media ? (
                 <View style={[styles.uploadBox, { overflow: 'hidden', padding: 0, borderWidth: 0 }]}>
                     <Image source={{ uri: media.uri }} style={{ width: '100%', height: '100%' }} />
@@ -213,7 +232,6 @@ export function HireTab() {
                 </TouchableOpacity>
             </View>
 
-            {/* --- MODALS --- */}
             <MapPickerModal 
                 visible={isMapModalOpen} 
                 region={mapRegion} 
@@ -230,7 +248,6 @@ export function HireTab() {
                 onClose={() => setIsDropdownOpen(false)} 
             />
 
-            {/* --- REST OF FORM --- */}
             <Text style={styles.inputLabel}>Job Type</Text>
             <View style={styles.pillContainer}>
               {['Microjob', 'Part-time', 'Full-time'].map((type) => (
@@ -255,7 +272,14 @@ export function HireTab() {
             <TextInput style={styles.formInput} placeholder={`e.g. 25.00`} placeholderTextColor="#71717a" keyboardType="numeric" value={payAmount} onChangeText={setPayAmount} />
 
             <TouchableOpacity style={styles.primaryButton} onPress={handlePostJob} disabled={isSubmitting}>
-              {isSubmitting ? <ActivityIndicator color="white" /> : <Text style={styles.submitBtnText}>Post Job</Text>}
+              {isSubmitting ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <ActivityIndicator color="white" />
+                      <Text style={styles.submitBtnText}>{uploadStatus}</Text>
+                  </View>
+              ) : (
+                  <Text style={styles.submitBtnText}>Post Job</Text>
+              )}
             </TouchableOpacity>
         </View>
     );
@@ -265,4 +289,5 @@ const localStyles = StyleSheet.create({
     iconButton: { backgroundColor: '#18181b', borderWidth: 1, borderColor: '#27272a', borderRadius: 10, width: 55, justifyContent: 'center', alignItems: 'center' },
     toggleTrack: { width: 50, height: 28, borderRadius: 15, padding: 1.5, borderWidth: 1 },
     toggleKnob: { width: 22, height: 22, borderRadius: 11, backgroundColor: 'white', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 2, elevation: 3 },
+    Switch: { alignSelf: 'flex-end', marginLeft: 'auto' }
 });
