@@ -1,9 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Image } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Image, Animated, SafeAreaView } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
 import { router } from 'expo-router';
 import { ArrowLeft, ArrowRight, Check, MapIcon, CalendarIcon, ChevronDown } from 'lucide-react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { isValidPhoneNumber, AsYouType } from 'libphonenumber-js';
 
 import { supabase } from './lib/supabase';
@@ -54,6 +52,23 @@ export default function SignupScreen() {
   const isLocationError = touched.location && !locManager.gpsData && !locManager.selectedLocId;
   const isJobError = touched.currentJob && currentJob.trim().length === 0;
 
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  const animateTransition = (nextStep: number, direction: 'forward' | 'backward') => {
+    Animated.parallel([
+      Animated.timing(slideAnim, { toValue: direction === 'forward' ? -50 : 50, duration: 200, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true })
+    ]).start(() => {
+      setStep(nextStep);
+      slideAnim.setValue(direction === 'forward' ? 50 : -50);
+      Animated.parallel([
+        Animated.timing(slideAnim, { toValue: 0, duration: 250, useNativeDriver: true }),
+        Animated.timing(fadeAnim, { toValue: 1, duration: 250, useNativeDriver: true })
+      ]).start();
+    });
+  };
+
   const getInputStyle = (hasError: boolean) => hasError ? { borderColor: '#ef4444', borderWidth: 1 } : {};
 
   const validateCurrentStep = () => {
@@ -63,7 +78,11 @@ export default function SignupScreen() {
     }
     if (step === 2) {
       setTouched(prev => ({ ...prev, fullName: true, birthDate: true, phoneNumber: true, location: true }));
+      
       if (fullName.trim().length < 2 || !hasSelectedDate) return false;
+      if (calculateAge(birthDate) < 16)
+        return false;
+      
       if (!selectedCountry || !isValidPhoneNumber(phoneNumber, selectedCountry.code as any)) return false;
       if (!locManager.gpsData && !locManager.selectedLocId) return false;
     }
@@ -75,8 +94,19 @@ export default function SignupScreen() {
     return true;
   };
 
-  const handleNext = () => validateCurrentStep() && step < TOTAL_STEPS && setStep(step + 1);
-  const handlePrev = () => step > 1 ? setStep(step - 1) : router.back();
+  const handleNext = () => {
+    if (validateCurrentStep() && step < TOTAL_STEPS) {
+      animateTransition(step + 1, 'forward');
+    }
+  };
+
+  const handlePrev = () => {
+    if (step > 1) {
+      animateTransition(step - 1, 'backward');
+    } else {
+      router.back();
+    }
+  };
 
   const toggleTag = (skillName: string) => {
     if (selectedTags.includes(skillName)) setSelectedTags(selectedTags.filter(t => t !== skillName));
@@ -87,10 +117,10 @@ export default function SignupScreen() {
   };
 
   const handleDateChange = (selectedDate: Date) => {
-      setBirthDate(selectedDate); 
-      setHasSelectedDate(true); 
-      markTouched('birthDate'); 
-    };
+    setBirthDate(selectedDate);
+    setHasSelectedDate(true);
+    markTouched('birthDate');
+  };
 
   const confirmMapLocation = async () => {
     locManager.setIsGettingLocation(true);
@@ -103,26 +133,76 @@ export default function SignupScreen() {
   const handleCreateAccount = async () => {
     if (!validateCurrentStep()) return;
     setLoading(true);
-    const formattedPhoneNumber = `${selectedCountry?.phone_prefix || ''} ${phoneNumber.trim()}`;
 
-    const { error } = await supabase.auth.signUp({
-      email, password,
-      options: {
-        data: {
-          full_name: fullName.trim(),
-          birth_date: birthDate.toISOString().split('T')[0],
-          phone_number: formattedPhoneNumber,
-          location: locManager.gpsData?.city_name || "Unknown",
-          current_job: currentJob.trim(),
-          skills: selectedTags
-        }
+    try {
+      const formattedPhoneNumber = `${selectedCountry?.phone_prefix || ''} ${phoneNumber.trim()}`;
+
+      // 1. CREATE AUTH USER (Notice: No metadata being passed here anymore!)
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email, 
+        password,
+      });
+
+      if (authError) throw authError;
+
+      const userId = authData.user?.id;
+      if (!userId) throw new Error("No user ID returned from signup.");
+
+      // 2. PROCESS LOCATION FIRST
+      let finalLocationId = locManager.selectedLocId;
+
+      if (!finalLocationId && locManager.gpsData) {
+        const { data: newLoc, error: locError } = await supabase
+          .from('locations')
+          .insert([{ 
+            city_name: locManager.gpsData.city_name, 
+            country_code: locManager.gpsData.country_code, 
+            latitude: locManager.gpsData.latitude, 
+            longitude: locManager.gpsData.longitude 
+          }])
+          .select('id')
+          .single();
+
+        if (locError) throw locError;
+        finalLocationId = newLoc?.id;
       }
-    });
 
-    setLoading(false);
-    if (error) Alert.alert('Error', error.message);
-    else { Alert.alert('Welcome!', 'Account created.'); router.replace('/(tabs)/profile'); }
+      // 3. INSERT DIRECTLY INTO PROFILES TABLE
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([{
+          id: userId,
+          full_name: fullName.trim(),
+          age: calculateAge(birthDate), 
+          email: email.trim(),
+          phone_number: formattedPhoneNumber,
+          profile_location_id: finalLocationId || null,
+        }]);
+
+      if (profileError) throw profileError;
+
+      Alert.alert('Welcome!', 'Account created successfully.');
+      router.replace('/(tabs)/profile');
+
+    } catch (error: any) {
+      console.error("Signup Error:", error);
+      Alert.alert('Error', error.message || 'Something went wrong during signup.');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const calculateAge = (dob: Date) => {
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  const isUnderageError = touched.birthDate && hasSelectedDate && calculateAge(birthDate) < 16;
 
   const renderStepContent = () => {
     switch (step) {
@@ -148,7 +228,7 @@ export default function SignupScreen() {
             <TextInput style={[styles.input, getInputStyle(isNameError)]} placeholder="Full Name (e.g. Jane Doe)" placeholderTextColor="#71717a" value={fullName} onChangeText={setFullName} onBlur={() => markTouched('fullName')} />
             
             <TouchableOpacity 
-              style={[styles.input, { marginTop: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, getInputStyle(isDateError)]} 
+              style={[styles.input, { marginTop: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, getInputStyle(isDateError || isUnderageError)]} 
               onPress={() => { setShowDatePicker(true); markTouched('birthDate'); }}
             >
               <Text style={{ color: hasSelectedDate ? 'white' : '#71717a', fontSize: 20 }}>
@@ -156,6 +236,15 @@ export default function SignupScreen() {
               </Text>
               <CalendarIcon size={20} color={hasSelectedDate ? 'white' : '#71717a'} />
             </TouchableOpacity>
+            
+            {isUnderageError && <Text style={styles.errorText}>You must be at least 16 years old.</Text>}
+
+            <DatePickerModal 
+              visible={showDatePicker}
+              date={birthDate}
+              onClose={() => setShowDatePicker(false)}
+              onChange={handleDateChange}
+            />
 
             <DatePickerModal 
               visible={showDatePicker}
@@ -240,9 +329,9 @@ export default function SignupScreen() {
           <View style={[styles.progressBar, { width: `${(step / TOTAL_STEPS) * 100}%` }]} />
         </View>
 
-        <View style={styles.contentContainer}>
+        <Animated.View style={[styles.contentContainer, { opacity: fadeAnim, transform: [{ translateX: slideAnim }] }]}>
           {renderStepContent()}
-        </View>
+        </Animated.View>
 
         <View style={styles.bottomNav}>
           <TouchableOpacity style={styles.iconButton} onPress={handlePrev}><ArrowLeft size={24} color="white" /></TouchableOpacity>

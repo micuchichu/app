@@ -2,7 +2,7 @@ import * as AuthSession from 'expo-auth-session';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Button, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { supabase } from './lib/supabase';
 
 import { GlobalStyles } from './constants/globalStyles';
@@ -111,7 +111,7 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'black', justifyContent: 'center' },
+  container: { flex: 1, backgroundColor: 'black', justifyContent: 'center', flexGrow: 1 },
   formContainer: { padding: 20 },
   header: { color: 'white', fontSize: 32, fontWeight: 'bold', marginBottom: 8 },
   subHeader: { color: '#a1a1aa', fontSize: 16, marginBottom: 30 },
@@ -121,7 +121,6 @@ const styles = StyleSheet.create({
   primaryButton: { backgroundColor: '#8b5cf6', padding: 18, borderRadius: 12, alignItems: 'center', marginTop: 10 },
   btnText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
   
-  // Divider Styles
   dividerContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 25 },
   dividerLine: { flex: 1, height: 1, backgroundColor: '#27272a' },
   dividerText: { color: '#71717a', paddingHorizontal: 15, fontWeight: 'bold' },

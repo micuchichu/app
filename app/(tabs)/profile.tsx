@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Platform, ActivityIndicator, Alert } from 'react-native';
-import { User, Settings, Star, Briefcase, LogOut, Lock } from 'lucide-react-native';
-import { supabase } from '../lib/supabase'; // Adjust path to your supabase.ts file
+import { User, LogOut, Star, Briefcase, Lock } from 'lucide-react-native';
+import { supabase } from '../lib/supabase';
 import { router } from 'expo-router';
 
 export default function ProfileScreen() {
@@ -9,27 +9,40 @@ export default function ProfileScreen() {
   const [userData, setUserData] = useState<any>(null);
   const [isGuest, setIsGuest] = useState(false);
 
-  // Fetch the user data when the screen loads
   useEffect(() => {
     fetchUserProfile();
   }, []);
 
   const fetchUserProfile = async () => {
     setLoading(true);
-    const { data: { user }, error } = await supabase.auth.getUser();
-    
-    if (user?.is_anonymous || !user?.email) {
-      setIsGuest(true);
-    } else if (user) {
-      setUserData(user);
-    }
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError) throw authError;
 
-    if (error) {
-      console.log("Error fetching user:", error);
-    } else if (user) {
-      setUserData(user);
+      if (!user || user.is_anonymous || !user.email) {
+        setIsGuest(true);
+        setLoading(false);
+        return;
+      }
+
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.log("Error fetching profile from DB:", profileError);
+        setUserData({ email: user.email });
+      } else {
+        setUserData({ ...profileData, email: user.email });
+      }
+    } catch (error) {
+      console.log("Error fetching user data:", error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleSignOut = async () => {
@@ -37,8 +50,6 @@ export default function ProfileScreen() {
     if (error) {
       Alert.alert("Error signing out", error.message);
     } else {
-      // The _layout.tsx Auth Guard will automatically catch this and kick them to /login,
-      // but explicitly routing provides a faster visual response.
       router.replace('/login');
     }
   };
@@ -51,7 +62,7 @@ export default function ProfileScreen() {
     );
   }
 
-    if (isGuest) {
+  if (isGuest) {
     return (
       <View style={[styles.screenContainer, { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 }]}>
         <View style={styles.restrictedCircle}>
@@ -67,11 +78,11 @@ export default function ProfileScreen() {
     );
   }
 
-  // Safely extract metadata (fallback to empty objects/strings if missing)
-  const meta = userData?.user_metadata || {};
   const emailPrefix = userData?.email?.split('@')[0] || 'user';
-  const displayName = meta.full_name || emailPrefix;
-  const skills: string[] = meta.skills || [];
+  const displayName = userData?.full_name || emailPrefix;
+  const currentJob = userData?.current_job || 'New Member';
+  const age = userData?.age || '?';
+  const skills: string[] = userData?.skills || [];
 
   return (
     <ScrollView style={styles.screenContainer} contentContainerStyle={{paddingBottom: 120}}>
@@ -87,7 +98,7 @@ export default function ProfileScreen() {
         </View>
         
         <Text style={styles.profileName}>{displayName}</Text>
-        <Text style={styles.profileHandle}>{meta.current_job || 'New Member'} • Age {meta.age || '?'}</Text>
+        <Text style={styles.profileHandle}>{currentJob} • Age {age}</Text>
         
         <View style={styles.statsRow}>
           <View style={styles.statBox}>
@@ -134,7 +145,6 @@ export default function ProfileScreen() {
     </ScrollView>
   );
 }
-
 
 const styles = StyleSheet.create({
   loadingContainer: { flex: 1, backgroundColor: 'black', justifyContent: 'center', alignItems: 'center' },

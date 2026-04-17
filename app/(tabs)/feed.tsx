@@ -87,7 +87,6 @@ export default function FeedScreen() {
         </SafeAreaView>
       </View>
 
-      {/* The Feed */}
       <FlashList
         data={jobs}
         renderItem={({ item }) => <JobCard item={item} onApply={() => handleApply(item)} userId={userId} />}
@@ -103,7 +102,6 @@ export default function FeedScreen() {
         viewabilityConfig={{ itemVisiblePercentThreshold: 80 }}
       />
 
-      {/* Bidding Modal */}
       <Modal visible={!!biddingJob} transparent animationType="slide">
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={GlobalStyles.modalOverlay}>
           <View style={styles.modalBox}>
