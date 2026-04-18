@@ -1,8 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Dimensions, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from 'react-native';
+import { ActivityIndicator, Alert, Dimensions, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
-import { DollarSign, X } from 'lucide-react-native';
 
 import { supabase } from '../lib/supabase';
 import { trackEvent } from '../lib/ranking'; 
@@ -10,6 +9,7 @@ import { GlobalStyles } from '../constants/globalStyles';
 import { Colors } from '../constants/colors';
 
 import JobCard, { Job } from '../components/jobCard';
+import { BiddingModal } from '../components/biddingModal'; 
 
 const { height } = Dimensions.get('window');
 
@@ -17,8 +17,8 @@ export default function FeedScreen() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  
   const [biddingJob, setBiddingJob] = useState<Job | null>(null);
-  const [bidAmount, setBidAmount] = useState('');
   const [feedMode, setFeedMode] = useState<'hiring' | 'toHire'>('hiring');
 
   useEffect(() => {
@@ -31,13 +31,20 @@ export default function FeedScreen() {
 
   const fetchJobs = async () => {
     setIsLoading(true);
+    
     const { data, error } = await supabase
       .from('job_postings')
-      .select(`*, employers ( company_name ), locations ( city_name )`)
+      .select(`
+        *,
+        id:job_id,
+        employers ( rating, verified ),
+        locations!job_location_id ( city_name )
+      `)
       .eq('active', true)
       .order('created_at', { ascending: false });
 
     if (error) {
+      console.error("Fetch error details:", error);
       Alert.alert('Error fetching jobs', error.message);
     } else {
       const filtered = (data ?? []).filter((job: Job) => 
@@ -45,6 +52,7 @@ export default function FeedScreen() {
       );
       setJobs(filtered);
     }
+    
     setIsLoading(false);
   };
 
@@ -72,7 +80,6 @@ export default function FeedScreen() {
 
   return (
     <View style={GlobalStyles.safeScreen}>
-      {/* Top Nav */}
       <View style={styles.topNavContainer}>
         <SafeAreaView edges={['top']} style={styles.topNav}>
           <TouchableOpacity onPress={() => setFeedMode('hiring')}>
@@ -102,61 +109,22 @@ export default function FeedScreen() {
         viewabilityConfig={{ itemVisiblePercentThreshold: 80 }}
       />
 
-      <Modal visible={!!biddingJob} transparent animationType="slide">
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={GlobalStyles.modalOverlay}>
-          <View style={styles.modalBox}>
-            <TouchableOpacity style={styles.closeBtn} onPress={() => setBiddingJob(null)}>
-              <X size={24} color={Colors.textSubtle} />
-            </TouchableOpacity>
-            
-            <Text style={styles.modalTitle}>Place your bid</Text>
-            <Text style={styles.modalSub}>{biddingJob?.title} • {biddingJob?.pay_amount}</Text>
-            
-            <View style={styles.inputContainer}>
-              <DollarSign size={20} color="white" />
-              <TextInput
-                style={styles.modalInput}
-                placeholder="0.00"
-                placeholderTextColor={Colors.textSubtle}
-                keyboardType="numeric"
-                value={bidAmount}
-                onChangeText={setBidAmount}
-                autoFocus
-              />
-            </View>
-            
-            <TouchableOpacity
-              style={GlobalStyles.primaryButton}
-              onPress={async () => {
-                if (userId && biddingJob) await trackEvent(userId, biddingJob.id, 'bid');
-                Alert.alert('Bid Sent');
-                setBiddingJob(null);
-                setBidAmount('');
-              }}
-            >
-              <Text style={GlobalStyles.primaryButtonText}>Submit Bid</Text>
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+      {/* NEW: Drop in the isolated component! */}
+      <BiddingModal 
+        visible={!!biddingJob}
+        job={biddingJob}
+        userId={userId}
+        onClose={() => setBiddingJob(null)}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // Nav
   topNavContainer: { position: 'absolute', top: 0, width: '100%', zIndex: 10 },
   topNav: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingBottom: 15, paddingTop: Platform.OS === 'android' ? 15 : 0 },
   topNavText: { color: 'rgba(255,255,255,0.6)', fontSize: 16, fontWeight: '600', paddingHorizontal: 10 },
   topNavTextActive: { color: 'white', fontWeight: 'bold' },
   topNavSeparator: { color: 'rgba(255,255,255,0.3)', fontSize: 16 },
   activeIndicator: { height: 2, backgroundColor: 'white', width: 20, alignSelf: 'center', marginTop: 4, borderRadius: 2 },
-  
-  // Cleaned Modal Styles
-  modalBox: { backgroundColor: Colors.surface, padding: 25, borderTopLeftRadius: 30, borderTopRightRadius: 30, width: '100%' },
-  closeBtn: { alignSelf: 'flex-end', marginBottom: 10 },
-  modalTitle: { color: 'white', fontSize: 24, fontWeight: 'bold', marginBottom: 5 },
-  modalSub: { color: Colors.textMuted, fontSize: 15, marginBottom: 25 },
-  inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surfaceHighlight, borderRadius: 12, paddingHorizontal: 15, marginBottom: 25 },
-  modalInput: { flex: 1, color: 'white', fontSize: 28, paddingVertical: 18, marginLeft: 10, fontWeight: 'bold' },
 });

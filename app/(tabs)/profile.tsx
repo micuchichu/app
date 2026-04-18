@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Platform, ActivityIndicator, Alert } from 'react-native';
 import { User, LogOut, Star, Briefcase, Lock } from 'lucide-react-native';
-import { supabase } from '../lib/supabase';
 import { router } from 'expo-router';
+
+import { supabase } from '../lib/supabase';
+import { Colors } from '../constants/colors';
+import { GlobalStyles } from '../constants/globalStyles';
 
 export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
@@ -57,7 +60,7 @@ export default function ProfileScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#8b5cf6" />
+        <ActivityIndicator size="large" color={Colors.primary} />
       </View>
     );
   }
@@ -66,13 +69,13 @@ export default function ProfileScreen() {
     return (
       <View style={[styles.screenContainer, { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 }]}>
         <View style={styles.restrictedCircle}>
-          <Lock size={40} color="#a1a1aa" />
+          <Lock size={40} color={Colors.textMuted} />
         </View>
         <Text style={styles.restrictedHeader}>Account Required</Text>
         <Text style={styles.restrictedSub}>You need to be logged in to view and edit your profile.</Text>
         
-        <TouchableOpacity style={styles.primaryButton} onPress={handleSignOut}>
-          <Text style={styles.submitBtnText}>Log In / Sign Up</Text>
+        <TouchableOpacity style={[GlobalStyles.primaryButton, { width: '100%' }]} onPress={handleSignOut}>
+          <Text style={GlobalStyles.primaryButtonText}>Log In / Sign Up</Text>
         </TouchableOpacity>
       </View>
     );
@@ -87,10 +90,9 @@ export default function ProfileScreen() {
   return (
     <ScrollView style={styles.screenContainer} contentContainerStyle={{paddingBottom: 120}}>
       
-      {/* --- PROFILE HEADER --- */}
       <View style={styles.profileHeader}>
         <TouchableOpacity style={styles.settingsIcon} onPress={handleSignOut}>
-          <LogOut size={24} color="#ef4444" />
+          <LogOut size={24} color={Colors.error} />
         </TouchableOpacity>
         
         <View style={styles.largeAvatar}>
@@ -116,7 +118,6 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* --- DYNAMIC SKILLS TAGS --- */}
       <Text style={styles.sectionTitle}>My Expertise</Text>
       {skills.length > 0 ? (
         <View style={styles.skillsContainer}>
@@ -130,11 +131,10 @@ export default function ProfileScreen() {
         <Text style={styles.emptyText}>No skills added yet.</Text>
       )}
 
-      {/* --- MOCK RECENT ACTIVITY --- */}
       <Text style={[styles.sectionTitle, { marginTop: 25 }]}>Recent Activity</Text>
       
       <View style={styles.activityCard}>
-        <Briefcase size={20} color="#8b5cf6" />
+        <Briefcase size={20} color={Colors.primary} />
         <View style={styles.activityTextContainer}>
           <Text style={styles.activityTitle}>Account Created</Text>
           <Text style={styles.activitySubtitle}>Welcome to the platform!</Text>
@@ -147,40 +147,35 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  loadingContainer: { flex: 1, backgroundColor: 'black', justifyContent: 'center', alignItems: 'center' },
-  screenContainer: { flex: 1, backgroundColor: 'black', padding: 20, paddingTop: Platform.OS === 'android' ? 60 : 60 },
+  loadingContainer: { flex: 1, backgroundColor: Colors.background, justifyContent: 'center', alignItems: 'center' },
+  screenContainer: { flex: 1, backgroundColor: Colors.background, padding: 20, paddingTop: Platform.OS === 'android' ? 60 : 60 },
   
-  profileHeader: { alignItems: 'center', backgroundColor: '#18181b', padding: 20, borderRadius: 20, marginBottom: 25, position: 'relative' },
+  profileHeader: { alignItems: 'center', backgroundColor: Colors.surface, padding: 20, borderRadius: 20, marginBottom: 25, position: 'relative' },
   settingsIcon: { position: 'absolute', top: 20, right: 20 },
-  largeAvatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#3f3f46', justifyContent: 'center', alignItems: 'center', marginBottom: 10, borderWidth: 2, borderColor: '#8b5cf6' },
+  largeAvatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: Colors.surfaceHighlight, justifyContent: 'center', alignItems: 'center', marginBottom: 10, borderWidth: 2, borderColor: Colors.primary },
   
   profileName: { color: 'white', fontSize: 22, fontWeight: 'bold', textTransform: 'capitalize' },
-  profileHandle: { color: '#a1a1aa', fontSize: 14, marginBottom: 20, fontWeight: '500' },
+  profileHandle: { color: Colors.textMuted, fontSize: 14, marginBottom: 20, fontWeight: '500' },
   
-  statsRow: { flexDirection: 'row', justifyContent: 'space-around', width: '100%', borderTopWidth: 1, borderTopColor: '#27272a', paddingTop: 20 },
+  statsRow: { flexDirection: 'row', justifyContent: 'space-around', width: '100%', borderTopWidth: 1, borderTopColor: Colors.surfaceHighlight, paddingTop: 20 },
   statBox: { alignItems: 'center', width: '34%' },
   statNumber: { color: 'white', fontSize: 18, fontWeight: 'bold', flexDirection: 'row', alignItems: 'center' },
-  statLabel: { color: '#e4e4ec', fontSize: 12, marginTop: 4 },
+  statLabel: { color: Colors.textMuted, fontSize: 12, marginTop: 4 },
   
   sectionTitle: { color: 'white', fontSize: 18, fontWeight: 'bold', marginBottom: 15 },
   
-  // Skills Styles
   skillsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   skillPill: { backgroundColor: 'rgba(139, 92, 246, 0.15)', paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(139, 92, 246, 0.5)' },
   skillPillText: { color: '#d8b4fe', fontWeight: '600', fontSize: 14 },
-  emptyText: { color: '#71717a', fontStyle: 'italic' },
+  emptyText: { color: Colors.textMuted, fontStyle: 'italic' },
 
-  // Activity Styles
-  activityCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#18181b', padding: 15, borderRadius: 12, marginBottom: 10 },
+  activityCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surface, padding: 15, borderRadius: 12, marginBottom: 10 },
   activityTextContainer: { marginLeft: 15, flex: 1 },
   activityTitle: { color: 'white', fontWeight: 'bold', marginBottom: 2 },
-  activitySubtitle: { color: '#a1a1aa', fontSize: 12 },
+  activitySubtitle: { color: Colors.textMuted, fontSize: 12 },
   activityStatus: { color: '#fbbf24', fontSize: 12, fontWeight: 'bold' },
 
-  // Guest Restricted Styles
-  restrictedCircle: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#18181b', justifyContent: 'center', alignItems: 'center', marginBottom: 25, borderWidth: 1, borderColor: '#27272a' },
+  restrictedCircle: { width: 100, height: 100, borderRadius: 50, backgroundColor: Colors.surface, justifyContent: 'center', alignItems: 'center', marginBottom: 25, borderWidth: 1, borderColor: Colors.surfaceHighlight },
   restrictedHeader: { color: 'white', fontSize: 24, fontWeight: 'bold', marginBottom: 10, textAlign: 'center' },
-  restrictedSub: { color: '#a1a1aa', fontSize: 16, textAlign: 'center', marginBottom: 35, lineHeight: 22 },
-  primaryButton: { backgroundColor: '#2563eb', padding: 18, borderRadius: 12, alignItems: 'center', width: '100%' },
-  submitBtnText: { color: 'white', fontWeight: 'bold', fontSize: 16 }
+  restrictedSub: { color: Colors.textMuted, fontSize: 16, textAlign: 'center', marginBottom: 35, lineHeight: 22 },
 });

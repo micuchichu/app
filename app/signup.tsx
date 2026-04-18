@@ -137,7 +137,6 @@ export default function SignupScreen() {
     try {
       const formattedPhoneNumber = `${selectedCountry?.phone_prefix || ''} ${phoneNumber.trim()}`;
 
-      // 1. CREATE AUTH USER (Notice: No metadata being passed here anymore!)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email, 
         password,
@@ -148,7 +147,6 @@ export default function SignupScreen() {
       const userId = authData.user?.id;
       if (!userId) throw new Error("No user ID returned from signup.");
 
-      // 2. PROCESS LOCATION FIRST
       let finalLocationId = locManager.selectedLocId;
 
       if (!finalLocationId && locManager.gpsData) {
@@ -167,7 +165,6 @@ export default function SignupScreen() {
         finalLocationId = newLoc?.id;
       }
 
-      // 3. INSERT DIRECTLY INTO PROFILES TABLE
       const { error: profileError } = await supabase
         .from('profiles')
         .insert([{

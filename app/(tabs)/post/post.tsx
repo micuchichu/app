@@ -3,7 +3,7 @@ import {
   StyleSheet, Text, View, TouchableOpacity, 
   ScrollView, Dimensions, Platform, KeyboardAvoidingView, ActivityIndicator
 } from 'react-native';
-import { InfoIcon, Lock } from 'lucide-react-native';
+import { Lock } from 'lucide-react-native';
 import { HireTab } from './hire';
 import { supabase } from '../../lib/supabase';
 
@@ -72,12 +72,10 @@ export const styles = StyleSheet.create({
   screenContainer: { flex: 1, backgroundColor: 'black', paddingHorizontal: 20, paddingTop: 60 },
   screenHeader: { color: 'white', fontSize: 28, fontWeight: 'bold', marginBottom: 20 },
   
-  // --- Restricted View Styles ---
   restrictedCircle: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#18181b', justifyContent: 'center', alignItems: 'center', marginBottom: 25, borderWidth: 1, borderColor: '#27272a' },
   restrictedHeader: { color: 'white', fontSize: 24, fontWeight: 'bold', marginBottom: 10, textAlign: 'center' },
   restrictedSub: { color: '#a1a1aa', fontSize: 16, textAlign: 'center', marginBottom: 35, lineHeight: 22 },
 
-  // --- Toggle Styles ---
   toggleContainer: { flexDirection: 'row', backgroundColor: '#18181b', borderRadius: 25, padding: 4, marginBottom: 25, borderWidth: 1, borderColor: '#27272a' },
   toggleSlider: { position: 'absolute', top: 4, bottom: 4, left: 4, right: 4, backgroundColor: '#8b5cf6', borderRadius: 21, width: '50%'},
   toggleBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 21 },
@@ -85,7 +83,6 @@ export const styles = StyleSheet.create({
   toggleText: { color: '#a1a1aa', fontWeight: 'bold', fontSize: 14 },
   toggleTextActive: { color: 'white' },
 
-  // --- Form Styles ---
   formSection: { flex: 1 },
   subHeader: { color: 'white', fontSize: 20, fontWeight: 'bold', marginBottom: 20 },
   uploadBox: { height: 160, backgroundColor: '#18181b', borderRadius: 15, borderWidth: 2, borderColor: '#27272a', borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', marginBottom: 25 },
@@ -93,7 +90,6 @@ export const styles = StyleSheet.create({
   inputLabel: { color: '#e4e4e7', fontSize: 14, fontWeight: 'bold', marginBottom: 8, marginTop: 10 },
   formInput: { backgroundColor: '#18181b', color: 'white', padding: 15, borderRadius: 10, fontSize: 16, borderWidth: 1, borderColor: '#27272a' },
   
-  // --- Pill/Switch Styles ---
   pillContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 5 },
   pill: { backgroundColor: '#18181b', paddingVertical: 10, paddingHorizontal: 15, borderRadius: 20, borderWidth: 1, borderColor: '#27272a' },
   pillActive: { backgroundColor: '#8b5cf6', borderColor: '#8b5cf6' },
@@ -102,7 +98,6 @@ export const styles = StyleSheet.create({
   switchRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10},
   infoIcon: { marginLeft: 6, marginRight: '55%' },
   
-  // --- Buttons ---
   primaryButton: { backgroundColor: '#8a5cf6', color: 'black', padding: 18, borderRadius: 12, alignItems: 'center', marginTop: 30, width: '100%', alignSelf: 'center' },
   submitBtnText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
 });

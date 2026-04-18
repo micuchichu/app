@@ -85,7 +85,7 @@ export default function JobCard({ item, onApply, userId }: { item: Job; onApply:
 }
 
 const styles = StyleSheet.create({
-  jobCard: { height: height, width: width }, 
+  jobCard: { height: height - 20, width: width, marginBottom: 20 }, 
   bgImage: { ...StyleSheet.absoluteFillObject },
   darkOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.5)' },
   contentOverlay: { flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', paddingBottom: 110, paddingHorizontal: 15 },

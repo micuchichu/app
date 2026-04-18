@@ -1,13 +1,13 @@
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
-export default function NegotiableInfoModal({ isVisible , onClose } : { isVisible: boolean, onClose: () => void }) {
+export default function InfoModal({ isVisible , onClose, title, description } : { isVisible: boolean, onClose: () => void, title: string, description?: string }) {
     return (
         <Modal visible={isVisible} transparent animationType="fade">
             <View style={styles.modalOverlay}>
                 <View style={styles.modalContent}>
-                    <Text style={styles.modalTitle}>What does "Negotiable" mean?</Text>
-                    <Text style={styles.modalText}>Marking a job as "Negotiable" means that the pay is flexible and can be discussed between the poster and potential workers. This can help attract more applicants who may be interested in the job but want to negotiate the price based on their skills and experience.</Text>
+                    <Text style={styles.modalTitle}>{title}</Text>
+                    <Text style={styles.modalText}>{description}</Text>
                     <TouchableOpacity style={styles.closeButton} onPress={onClose}>
                         <Text style={styles.closeButtonText}>Got it!</Text>
                     </TouchableOpacity>

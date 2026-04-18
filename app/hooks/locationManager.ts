@@ -28,8 +28,8 @@ export function useLocationManager() {
     };
 
     const processCoordinates = async (lat: number, lng: number) => {
-        const approxLat = parseFloat(lat.toFixed(2));
-        const approxLng = parseFloat(lng.toFixed(2));
+        const approxLat = parseFloat(lat.toFixed(8));
+        const approxLng = parseFloat(lng.toFixed(8));
         let geocode = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
 
         if (geocode.length > 0) {
