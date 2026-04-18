@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { Bookmark, Briefcase, DollarSign, Eye, MapPin, Share2, User } from 'lucide-react-native';
+
+import { useVideoPlayer, VideoView } from 'expo-video';
 
 import { trackEvent } from '../lib/ranking'; 
 import { Colors } from '../constants/colors'; 
@@ -15,36 +17,71 @@ export interface Job {
   pay_amount: number;
   pay_currency: string;
   is_negotiable: boolean;
-  thumbnail_url: string;
+  thumbnail_url: string | null;
+  video_url?: string | null; 
   viewCount: number; 
-  employers?: { company_name?: string } | null; 
+
+  employers?: { 
+    rating?: number;
+    verified?: boolean;
+    profiles?: { full_name?: string } | null 
+  } | null; 
   locations?: { city_name?: string } | null; 
 }
 
-export default function JobCard({ item, onApply, userId }: { item: Job; onApply: () => void; userId: string | null; }) {
+export default function JobCard({ item, onApply, userId, isActive }: { item: Job; onApply: () => void; userId: string | null; isActive: boolean; }) {
   const [isSaved, setIsSaved] = useState(false);
+
+  const player = useVideoPlayer(item.video_url || null, player => {
+    player.loop = true;
+    player.muted = true;
+  });
+
+  useEffect(() => {
+    if (!item.video_url || !player) return;
+
+    if (isActive) {
+      player.currentTime = 0;
+      player.play();          
+    } else {
+      player.pause();
+    }
+  }, [isActive, player, item.video_url]);
 
   const handleSave = async () => {
     setIsSaved(!isSaved);
     if (userId) await trackEvent(userId, item.id, 'save');
   };
 
-  const employerName = item.employers?.company_name || 'Unknown Employer';
+  const employerName = item.employers?.profiles?.full_name || 'Unknown Employer';
+  
   const cityName = item.locations?.city_name || 'Remote';
   const formattedPay = `${item.is_negotiable ? 'Max ' : ''}${item.pay_amount} ${item.pay_currency}`;
 
+  const fallbackImage = "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80";
+
   return (
     <View style={styles.jobCard}>
-      <Image source={{ uri: item.thumbnail_url }} style={styles.bgImage} />
+      
+      {item.video_url ? (
+        <VideoView
+          player={player}
+          style={styles.bgImage}
+          contentFit="cover"
+          allowsFullscreen={false}
+          nativeControls={false}
+        />
+      ) : (
+        <Image 
+          source={{ uri: item.thumbnail_url || fallbackImage }} 
+          style={styles.bgImage} 
+        />
+      )}
+
       <View style={styles.darkOverlay} />
       
       <View style={styles.contentOverlay}>
-        <View style={styles.jobInfoContainer}>
-          <View style={styles.viewCountBadge}>
-            <Eye size={12} color="white" />
-            <Text style={styles.viewCountText}>{item.viewCount || 0} people viewing</Text>
-          </View>
-          
+        <View style={styles.jobInfoContainer}>          
           <Text style={styles.employer}>@{employerName.replace(/\s+/g, '').toLowerCase()}</Text>
           <Text style={styles.jobTitle}>{item.title}</Text>
           <Text style={styles.description} numberOfLines={2}>{item.description}</Text>
@@ -84,16 +121,14 @@ export default function JobCard({ item, onApply, userId }: { item: Job; onApply:
   );
 }
 
+// ... (Keep your exact same styles down here!) ...
 const styles = StyleSheet.create({
   jobCard: { height: height - 20, width: width, marginBottom: 20 }, 
   bgImage: { ...StyleSheet.absoluteFillObject },
   darkOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.5)' },
   contentOverlay: { flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', paddingBottom: 110, paddingHorizontal: 15 },
   jobInfoContainer: { flex: 1, paddingRight: 20 },
-  
-  // Tags & Info
-  viewCountBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, marginBottom: 8 },
-  viewCountText: { color: 'white', fontSize: 11, marginLeft: 4, fontWeight: '500' },
+
   employer: { color: '#d1d5db', fontSize: 16, fontWeight: '600', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3 },
   jobTitle: { color: 'white', fontSize: 26, fontWeight: 'bold', marginVertical: 6, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3 },
   description: { color: '#e5e7eb', fontSize: 14, marginBottom: 12, lineHeight: 20, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2 },
@@ -103,7 +138,6 @@ const styles = StyleSheet.create({
   payRow: { flexDirection: 'row', alignItems: 'center' },
   payText: { color: '#4ade80', fontSize: 18, fontWeight: 'bold', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3 },
   
-  // Action Buttons
   actionButtonsContainer: { alignItems: 'center', paddingBottom: 10 },
   actionIcon: { alignItems: 'center', marginBottom: 20 },
   profilePicPlaceholder: { width: 45, height: 45, borderRadius: 22.5, backgroundColor: Colors.surfaceHighlight, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: 'white' },

@@ -20,6 +20,7 @@ export default function FeedScreen() {
   
   const [biddingJob, setBiddingJob] = useState<Job | null>(null);
   const [feedMode, setFeedMode] = useState<'hiring' | 'toHire'>('hiring');
+  const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setUserId(user?.id ?? null));
@@ -37,7 +38,11 @@ export default function FeedScreen() {
       .select(`
         *,
         id:job_id,
-        employers ( rating, verified ),
+        employers ( 
+          rating, 
+          verified,
+          profiles ( full_name ) 
+        ),
         locations!job_location_id ( city_name )
       `)
       .eq('active', true)
@@ -61,22 +66,18 @@ export default function FeedScreen() {
       setBiddingJob(job);
     } else {
       if (userId) await trackEvent(userId, job.id, 'apply');
-      Alert.alert('Applied!', `Your application to ${job.employers?.company_name || 'the employer'} has been sent.`);
+      Alert.alert('Applied!', `Your application to ${job.employers?.profiles?.full_name || 'the employer'} has been sent.`);
     }
   };
 
   const handleViewableChange = useCallback(({ viewableItems }: any) => {
+    if (viewableItems.length > 0) {
+      // Track which item is currently taking up the screen
+      setActiveIndex(viewableItems[0].index);
+    }
     if (!userId) return;
     viewableItems.forEach((vi: any) => trackEvent(userId, vi.item.id, 'view'));
   }, [userId]);
-
-  if (isLoading && jobs.length === 0) {
-    return (
-      <View style={GlobalStyles.safeScreen}>
-        <ActivityIndicator size="large" color={Colors.primary} style={{ flex: 1 }} />
-      </View>
-    );
-  }
 
   return (
     <View style={GlobalStyles.safeScreen}>
@@ -96,7 +97,14 @@ export default function FeedScreen() {
 
       <FlashList
         data={jobs}
-        renderItem={({ item }) => <JobCard item={item} onApply={() => handleApply(item)} userId={userId} />}
+        renderItem={({ item, index }) => (
+          <JobCard 
+            item={item} 
+            onApply={() => handleApply(item)} 
+            userId={userId} 
+            isActive={index === activeIndex} 
+          />
+        )}
         keyExtractor={item => item.id.toString()}
         snapToInterval={height} 
         snapToAlignment="start"

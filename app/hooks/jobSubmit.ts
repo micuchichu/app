@@ -61,7 +61,6 @@ export const useJobSubmit = (locManager: any) => {
         let finalThumbnailUrl = "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80";
         let finalVideoUrl = null;
 
-        // 2. Upload Media
         if (media) {
             setUploadStatus('Uploading media...');
             const uploadedUrl = await uploadMediaToSupabase(media.uri, media.type);
@@ -76,7 +75,6 @@ export const useJobSubmit = (locManager: any) => {
 
         setUploadStatus('Posting job...');
 
-        // 3. Ensure Employer Exists
         const { data: existingEmployer, error: employerFetchError } = await supabase
             .from('employers')
             .select('id')
@@ -106,7 +104,6 @@ export const useJobSubmit = (locManager: any) => {
             finalEmployerId = newEmployer.id;
         }
 
-        // 4. Create Job Posting
         const cleanPay = parseFloat(payAmount.replace(/[^0-9.]/g, ''));
         const { error: jobError } = await supabase.from('job_postings').insert([{
             employer_id: user.id, 

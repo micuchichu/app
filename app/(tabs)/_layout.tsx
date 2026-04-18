@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Platform } from 'react-native';
 import { withLayoutContext } from 'expo-router';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
-import { Home, PlusSquare, User } from 'lucide-react-native';
+import { Home, Search, PlusSquare, User, Table } from 'lucide-react-native';
 
 const MaterialTopTabs = createMaterialTopTabNavigator();
 const SwipeableTabs = withLayoutContext(MaterialTopTabs.Navigator);
@@ -26,6 +26,14 @@ export default function TabLayout() {
       }}
     >
       <SwipeableTabs.Screen 
+        name="explore" 
+        options={{ 
+          title: 'Explore', 
+          tabBarIcon: ({ color }: { color: string }) => <Search size={24} color={color} /> 
+        }} 
+      />
+
+      <SwipeableTabs.Screen 
         name="feed" 
         options={{ 
           title: 'Feed', 
@@ -40,7 +48,15 @@ export default function TabLayout() {
           tabBarIcon: ({ color }: { color: string }) => <PlusSquare size={24} color={color} /> 
         }} 
       />
-      
+    
+      <SwipeableTabs.Screen 
+        name="dashboard" 
+        options={{ 
+          title: 'Dashboard', 
+          tabBarIcon: ({ color }: { color: string }) => <Table size={24} color={color} /> 
+        }} 
+      />
+
       <SwipeableTabs.Screen 
         name="profile" 
         options={{ 
@@ -48,6 +64,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }: { color: string }) => <User size={24} color={color} /> 
         }} 
       />
+
     </SwipeableTabs>
   );
 }
