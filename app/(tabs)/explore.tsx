@@ -3,12 +3,16 @@ import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, Platfo
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search, Map, TrendingUp, Filter, Clock, MapPin, Briefcase, ChevronRight } from 'lucide-react-native';
 
+import { JobsMapModal } from '../components/jobsMapModal';
+
 import { Colors } from '../constants/colors';
 import { GlobalStyles } from '../constants/globalStyles';
 
 export default function ExploreScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
+
+  const [isMapVisible, setIsMapVisible] = useState(false);
 
   const categories = ['All', 'Nearby', 'Microjobs', 'Part-time', 'Urgent', 'High Paying'];
 
@@ -57,7 +61,7 @@ export default function ExploreScreen() {
           </ScrollView>
 
           {/* --- MAP VIEW CTA --- */}
-          <TouchableOpacity style={styles.mapCard}>
+          <TouchableOpacity style={styles.mapCard} onPress={() => setIsMapVisible(true)}>
             <View style={styles.mapCardContent}>
               <View style={styles.mapIconBg}>
                 <Map size={24} color={Colors.primary} />
@@ -101,6 +105,11 @@ export default function ExploreScreen() {
               <Text style={styles.gridCardCount}>210 active</Text>
             </TouchableOpacity>
           </View>
+
+          <JobsMapModal 
+            visible={isMapVisible} 
+            onClose={() => setIsMapVisible(false)} 
+          />
 
         </ScrollView>
       </View>
