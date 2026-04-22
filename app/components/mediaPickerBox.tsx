@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { Camera, X } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 
-import { styles } from '../(tabs)/post/post'; 
+import { styles } from '@/app/(tabs)/post/post'; 
 
 interface MediaPickerBoxProps {
     media: ImagePicker.ImagePickerAsset | null;

@@ -1,5 +1,11 @@
-export function currencySymbol() {
-  const locale = Intl.NumberFormat().resolvedOptions().locale;
-  const currency = Intl.NumberFormat(locale, { style: 'currency', currency: 'USD' }).formatToParts(0).find(part => part.type === 'currency');
-  return currency ? currency.value : '$';
+import * as Localization from 'expo-localization';
+
+export interface Currency {
+  code: string;
+  symbol: string;
+}
+
+export function getDefaultCurrency() {
+  const locales = Localization.getLocales();
+  return { code: locales[0]?.currencyCode || 'EUR', symbol: locales[0]?.currencySymbol || '€' };
 }

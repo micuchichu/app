@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions, Alert } from 'react-native';
 import { Bookmark, Briefcase, DollarSign, Eye, MapPin, Share2, User } from 'lucide-react-native';
 
 import { useVideoPlayer, VideoView } from 'expo-video';
 
-import { trackEvent } from '../lib/ranking'; 
-import { Colors } from '../constants/colors'; 
+// NEW: Import your supabase client!
+import { supabase } from '@/app/lib/supabase';
+import { trackEvent } from '@/app/lib/ranking'; 
+import { Colors } from '@/app/constants/colors'; 
 
 const { width, height } = Dimensions.get('window');
 
@@ -37,6 +39,25 @@ export default function JobCard({ item, onApply, userId, isActive }: { item: Job
     player.muted = true;
   });
 
+  const fetchSaveStatus = async () => {
+    if (!userId) return;
+
+    const { data, error } = await supabase
+      .from('job_saves')
+      .select('job_posting_id')
+      .eq('user_id', userId)
+      .eq('job_posting_id', item.id)
+      .maybeSingle();
+
+    if (data) {
+      setIsSaved(true);
+    }
+  };
+
+  useEffect(() => {
+    fetchSaveStatus();
+  }, [userId, item.id]);
+
   useEffect(() => {
     if (!item.video_url || !player) return;
 
@@ -49,8 +70,37 @@ export default function JobCard({ item, onApply, userId, isActive }: { item: Job
   }, [isActive, player, item.video_url]);
 
   const handleSave = async () => {
-    setIsSaved(!isSaved);
-    if (userId) await trackEvent(userId, item.id, 'save');
+    if (!userId) {
+      Alert.alert("Sign In Required", "You need to be signed in to save jobs.");
+      return;
+    }
+
+    const newSavedState = !isSaved;
+    setIsSaved(newSavedState);
+
+    if (newSavedState) {
+      const { error } = await supabase
+        .from('job_saves')
+        .insert({ user_id: userId, job_posting_id: item.id });
+
+      if (error) {
+        console.error("Error saving job:", error);
+        setIsSaved(false);
+      } else {
+        await trackEvent(userId, item.id, 'save');
+      }
+    } else {
+      const { error } = await supabase
+        .from('job_saves')
+        .delete()
+        .eq('user_id', userId)
+        .eq('job_posting_id', item.id);
+
+      if (error) {
+        console.error("Error removing saved job:", error);
+        setIsSaved(true);
+      }
+    }
   };
 
   const employerName = item.employers?.profiles?.full_name || 'Unknown Employer';
@@ -121,7 +171,6 @@ export default function JobCard({ item, onApply, userId, isActive }: { item: Job
   );
 }
 
-// ... (Keep your exact same styles down here!) ...
 const styles = StyleSheet.create({
   jobCard: { height: height - 20, width: width, marginBottom: 20 }, 
   bgImage: { ...StyleSheet.absoluteFillObject },

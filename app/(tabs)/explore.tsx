@@ -3,10 +3,12 @@ import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, Platfo
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search, Map, TrendingUp, Filter, Clock, MapPin, Briefcase, ChevronRight } from 'lucide-react-native';
 
-import { JobsMapModal } from '../components/jobsMapModal';
 
-import { Colors } from '../constants/colors';
-import { GlobalStyles } from '../constants/globalStyles';
+import { Colors } from '@/app/constants/colors';
+import { GlobalStyles } from '@/app/constants/globalStyles';
+import { FilterState, JobFilterModal } from '@/app/components/jobFilterModal';
+import { JobsMapModal } from '@/app/components/jobsMapModal';
+
 
 export default function ExploreScreen() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -14,26 +16,28 @@ export default function ExploreScreen() {
 
   const [isMapVisible, setIsMapVisible] = useState(false);
 
+  const [isFilterVisible, setIsFilterVisible] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<FilterState | undefined>(undefined);
+
   const categories = ['All', 'Nearby', 'Microjobs', 'Part-time', 'Urgent', 'High Paying'];
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <View style={styles.container}>
         
-        {/* --- HEADER & SEARCH --- */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Explore</Text>
           <View style={styles.searchContainer}>
             <Search size={20} color={Colors.textSubtle} style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search jobs, skills, or employers..."
+              placeholder="Search jobs or profiles..."
               placeholderTextColor={Colors.textSubtle}
               value={searchQuery}
               onChangeText={setSearchQuery}
               returnKeyType="search"
             />
-            <TouchableOpacity style={styles.filterBtn}>
+            <TouchableOpacity style={styles.filterBtn} onPress={() => setIsFilterVisible(true)}>
               <Filter size={20} color="white" />
             </TouchableOpacity>
           </View>
@@ -41,7 +45,6 @@ export default function ExploreScreen() {
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
           
-          {/* --- CATEGORIES --- */}
           <ScrollView 
             horizontal 
             showsHorizontalScrollIndicator={false} 
@@ -60,7 +63,6 @@ export default function ExploreScreen() {
             ))}
           </ScrollView>
 
-          {/* --- MAP VIEW CTA --- */}
           <TouchableOpacity style={styles.mapCard} onPress={() => setIsMapVisible(true)}>
             <View style={styles.mapCardContent}>
               <View style={styles.mapIconBg}>
@@ -74,7 +76,6 @@ export default function ExploreScreen() {
             </View>
           </TouchableOpacity>
 
-          {/* --- TRENDING CATEGORIES --- */}
           <Text style={styles.sectionTitle}>
             <TrendingUp size={20} color={Colors.primary} style={{ marginRight: 8 }} />
             Trending Categories
@@ -109,6 +110,16 @@ export default function ExploreScreen() {
           <JobsMapModal 
             visible={isMapVisible} 
             onClose={() => setIsMapVisible(false)} 
+          />
+
+          <JobFilterModal 
+            visible={isFilterVisible}
+            onClose={() => setIsFilterVisible(false)}
+            currentFilters={activeFilters}
+            onApply={(newFilters) => {
+              setActiveFilters(newFilters);
+              console.log("Applying filters:", newFilters);
+            }}
           />
 
         </ScrollView>

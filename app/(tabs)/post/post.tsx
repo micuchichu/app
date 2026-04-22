@@ -4,8 +4,9 @@ import {
   ScrollView, Dimensions, Platform, KeyboardAvoidingView, ActivityIndicator
 } from 'react-native';
 import { Lock } from 'lucide-react-native';
+
 import { HireTab } from './hire';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '@/app/lib/supabase';
 
 const screenWidth = Dimensions.get('window').width;
 const contentWidth = screenWidth - 40;

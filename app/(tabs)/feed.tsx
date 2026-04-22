@@ -1,15 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Dimensions, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Alert, Dimensions, StyleSheet, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 
-import { supabase } from '../lib/supabase';
-import { trackEvent } from '../lib/ranking'; 
-import { GlobalStyles } from '../constants/globalStyles';
-import { Colors } from '../constants/colors';
+import { supabase } from '@/app/lib/supabase';
+import { trackEvent } from '@/app/lib/ranking'; 
+import { GlobalStyles } from '@/app/constants/globalStyles';
 
-import JobCard, { Job } from '../components/jobCard';
-import { BiddingModal } from '../components/biddingModal'; 
+import JobCard, { Job } from '@/app/components/jobCard';
+import { BiddingModal } from '@/app/components/biddingModal'; 
 
 const { height } = Dimensions.get('window');
 
@@ -19,7 +17,6 @@ export default function FeedScreen() {
   const [userId, setUserId] = useState<string | null>(null);
   
   const [biddingJob, setBiddingJob] = useState<Job | null>(null);
-  const [feedMode, setFeedMode] = useState<'hiring' | 'toHire'>('hiring');
   const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
@@ -28,7 +25,7 @@ export default function FeedScreen() {
 
   useEffect(() => {
     fetchJobs();
-  }, [feedMode]);
+  }, []);
 
   const fetchJobs = async () => {
     setIsLoading(true);
@@ -52,10 +49,7 @@ export default function FeedScreen() {
       console.error("Fetch error details:", error);
       Alert.alert('Error fetching jobs', error.message);
     } else {
-      const filtered = (data ?? []).filter((job: Job) => 
-        feedMode === 'hiring' ? job.schedule_type !== 'service_request' : job.schedule_type === 'service_request'
-      );
-      setJobs(filtered);
+      setJobs(data || []);
     }
     
     setIsLoading(false);
@@ -72,7 +66,6 @@ export default function FeedScreen() {
 
   const handleViewableChange = useCallback(({ viewableItems }: any) => {
     if (viewableItems.length > 0) {
-      // Track which item is currently taking up the screen
       setActiveIndex(viewableItems[0].index);
     }
     if (!userId) return;
@@ -81,20 +74,6 @@ export default function FeedScreen() {
 
   return (
     <View style={GlobalStyles.safeScreen}>
-      <View style={styles.topNavContainer}>
-        <SafeAreaView edges={['top']} style={styles.topNav}>
-          <TouchableOpacity onPress={() => setFeedMode('hiring')}>
-            <Text style={[styles.topNavText, feedMode === 'hiring' && styles.topNavTextActive]}>Hiring</Text>
-            {feedMode === 'hiring' && <View style={styles.activeIndicator} />}
-          </TouchableOpacity>
-          <Text style={styles.topNavSeparator}>|</Text>
-          <TouchableOpacity onPress={() => setFeedMode('toHire')}>
-            <Text style={[styles.topNavText, feedMode === 'toHire' && styles.topNavTextActive]}>To hire</Text>
-            {feedMode === 'toHire' && <View style={styles.activeIndicator} />}
-          </TouchableOpacity>
-        </SafeAreaView>
-      </View>
-
       <FlashList
         data={jobs}
         renderItem={({ item, index }) => (
@@ -117,7 +96,6 @@ export default function FeedScreen() {
         viewabilityConfig={{ itemVisiblePercentThreshold: 80 }}
       />
 
-      {/* NEW: Drop in the isolated component! */}
       <BiddingModal 
         visible={!!biddingJob}
         job={biddingJob}
@@ -127,12 +105,3 @@ export default function FeedScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  topNavContainer: { position: 'absolute', top: 0, width: '100%', zIndex: 10 },
-  topNav: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingBottom: 15, paddingTop: Platform.OS === 'android' ? 15 : 0 },
-  topNavText: { color: 'rgba(255,255,255,0.6)', fontSize: 16, fontWeight: '600', paddingHorizontal: 10 },
-  topNavTextActive: { color: 'white', fontWeight: 'bold' },
-  topNavSeparator: { color: 'rgba(255,255,255,0.3)', fontSize: 16 },
-  activeIndicator: { height: 2, backgroundColor: 'white', width: 20, alignSelf: 'center', marginTop: 4, borderRadius: 2 },
-});

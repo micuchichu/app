@@ -2,12 +2,11 @@ import { useState } from 'react';
 import { Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
-import { supabase } from '../lib/supabase'; // Adjust path if needed
-import { currencySymbol } from './utils'; // Adjust path if needed
+import { supabase } from '../lib/supabase';
+import { getDefaultCurrency } from './utils';
 import { uploadMediaToSupabase } from '../lib/mediaUpload';
 
 export const useJobSubmit = (locManager: any) => {
-    // --- FORM STATE ---
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [scheduleType, setScheduleType] = useState('Microjob');
@@ -17,11 +16,10 @@ export const useJobSubmit = (locManager: any) => {
     const [workMode, setWorkMode] = useState('Online');
     const [media, setMedia] = useState<ImagePicker.ImagePickerAsset | null>(null);
 
-    // --- SUBMIT STATE ---
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [uploadStatus, setUploadStatus] = useState('');
 
-    const handlePostJob = async () => {
+    const handlePostJob = async (selectedCurrency: string) => {
         if (!title || !payAmount || !description || (!locManager.selectedLocId && !locManager.gpsData)) {
             Alert.alert("Missing Info", "Please fill out all required fields and set a location.");
             return;
@@ -35,7 +33,6 @@ export const useJobSubmit = (locManager: any) => {
 
         let finalLocationId = locManager.selectedLocId;
 
-        // 1. Save GPS Location if needed
         if (locManager.gpsData) {
             const { data: newLoc, error: locError } = await supabase.from('locations')
                 .insert([{ 
@@ -112,7 +109,9 @@ export const useJobSubmit = (locManager: any) => {
             work_mode: workMode.toLowerCase(),
             schedule_type: scheduleType.toLowerCase(), 
             pay_amount: isNaN(cleanPay) ? 0 : cleanPay,
-            pay_currency: currencySymbol(),
+            
+            pay_currency: selectedCurrency, 
+            
             is_negotiable: isNegotiable, 
             people_needed: parseInt(peopleNeeded) || 1, 
             is_sponsored: false, 
@@ -128,7 +127,6 @@ export const useJobSubmit = (locManager: any) => {
         if (jobError) Alert.alert("Database Error", jobError.message);
         else {
             Alert.alert("Success!", "Your job has been posted.");
-            // Reset Form
             setTitle(''); setPayAmount(''); setDescription(''); setMedia(null);
             locManager.setSelectedLocId(null); locManager.setGpsData(null);
         }

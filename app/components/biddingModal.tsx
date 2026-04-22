@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { Modal, View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, StyleSheet, Alert } from 'react-native';
 import { DollarSign, X } from 'lucide-react-native';
 
-import { trackEvent } from '../lib/ranking'; 
-import { GlobalStyles } from '../constants/globalStyles';
-import { Colors } from '../constants/colors';
+import { trackEvent } from '@/app/lib/ranking'; 
+import { GlobalStyles } from '@/app/constants/globalStyles';
+import { Colors } from '@/app/constants/colors';
 import { Job } from './jobCard';
 
 interface BiddingModalProps {

@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Modal, SafeAreaView, Platform } from 'react-native';
-// NEW: Added LayoutList and LayoutGrid icons
-import { Briefcase, Users, ChevronRight, X, DollarSign, Clock, LayoutGrid, LayoutList } from 'lucide-react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Modal, Platform, Alert, DeviceEventEmitter } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { supabase } from '../lib/supabase';
-import { Colors } from '../constants/colors';
-import { GlobalStyles } from '../constants/globalStyles';
+import { Briefcase, Users, ChevronRight, X, DollarSign, Clock, Bookmark } from 'lucide-react-native';
 
-// --- TYPES ---
+import { supabase } from '@/app/lib/supabase';
+import { Colors } from '@/app/constants/colors';
+
+import JobCard, { Job } from '@/app/components/jobCard';
+
 interface MyJob {
   id: string; 
   title: string;
@@ -26,73 +27,93 @@ interface Applicant {
 }
 
 export default function DashboardScreen() {
-  const [myJobs, setMyJobs] = useState<MyJob[]>([]);
-  const [isLoadingJobs, setIsLoadingJobs] = useState(true);
+  const [activeTab, setActiveTab] = useState<'posted' | 'saved'>('posted');
+  
+  const [userId, setUserId] = useState<string | null>(null);
+
+  const [postedJobs, setPostedJobs] = useState<MyJob[]>([]);
+  const [savedJobs, setSavedJobs] = useState<MyJob[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   const [selectedJob, setSelectedJob] = useState<MyJob | null>(null);
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [isLoadingApplicants, setIsLoadingApplicants] = useState(false);
 
-  // --- NEW STATE: Tracks current view mode ---
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [previewJob, setPreviewJob] = useState<Job | null>(null);
 
   useEffect(() => {
-    fetchMyJobs();
+    fetchDashboardData();
   }, []);
 
-  const fetchMyJobs = async () => {
-    setIsLoadingJobs(true);
+  const fetchDashboardData = async () => {
+    setIsLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
-      setIsLoadingJobs(false);
+      setIsLoading(false);
       return;
     }
+    
+    setUserId(user.id);
 
-    const { data, error } = await supabase
+    // 1. Fetch Jobs the user POSTED
+    const { data: postedData, error: postedError } = await supabase
       .from('job_postings')
       .select('*, id:job_id')
       .eq('employer_id', user.id)
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error("Error fetching my jobs:", error);
-    } else {
-      setMyJobs(data || []);
-    }
-    setIsLoadingJobs(false);
-  };
+    if (!postedError && postedData) setPostedJobs(postedData);
 
-  const openJobDetails = async (job: MyJob) => {
-    setSelectedJob(job);
-    setIsLoadingApplicants(true);
-
-    const { data, error } = await supabase
-      .from('applications') 
+    // 2. Fetch Jobs the user SAVED
+    // UPDATED: Now fetches the nested relations so the JobCard has the employer name and city!
+    const { data: savedData, error: savedError } = await supabase
+      .from('job_saves')
       .select(`
-        *,
-        profiles!applicant_id ( full_name )
+        job_postings ( 
+          *, 
+          id:job_id,
+          employers ( rating, verified, profiles ( full_name ) ),
+          locations!job_location_id ( city_name )
+        )
       `)
-      .eq('job_id', job.id)
-      .order('created_at', { ascending: false });
+      .eq('user_id', user.id);
 
-    if (error) {
-      console.log("No applicants found or table doesn't exist yet:", error.message);
-      setApplicants([]);
-    } else {
-      setApplicants(data || []);
+    if (!savedError && savedData) {
+      const formattedSaved = savedData.map((s: any) => s.job_postings).filter(Boolean);
+      setSavedJobs(formattedSaved);
     }
-    setIsLoadingApplicants(false);
+
+    setIsLoading(false);
   };
 
-  // --- RENDERERS ---
+  const handleJobClick = async (job: MyJob) => {
+    if (activeTab === 'posted') {
+      setSelectedJob(job);
+      setIsLoadingApplicants(true);
 
-  // 1. ORIGINAL LIST RENDERER (Cleaned up slightly)
+      const { data, error } = await supabase
+        .from('applications') 
+        .select(`*, profiles!applicant_id ( full_name )`)
+        .eq('job_id', job.id)
+        .order('created_at', { ascending: false });
+
+      setApplicants(data || []);
+      setIsLoadingApplicants(false);
+    } else {
+      setPreviewJob(job as unknown as Job); 
+    }
+  };
+
   const renderListCard = ({ item }: { item: MyJob }) => (
-    <TouchableOpacity style={styles.jobCardList} onPress={() => openJobDetails(item)}>
+    <TouchableOpacity style={styles.jobCardList} onPress={() => handleJobClick(item)}>
       <View style={styles.jobCardListHeader}>
         <View style={styles.titleRow}>
-          <Briefcase size={18} color={Colors.primary} />
+          {activeTab === 'posted' ? (
+            <Briefcase size={18} color={Colors.primary} />
+          ) : (
+            <Bookmark size={18} color={Colors.primary} fill={Colors.primary} />
+          )}
           <Text style={styles.jobTitleList} numberOfLines={1}>{item.title}</Text>
         </View>
         <View style={[styles.statusBadge, { backgroundColor: item.active ? 'rgba(74, 222, 128, 0.15)' : 'rgba(161, 161, 170, 0.15)' }]}>
@@ -107,27 +128,9 @@ export default function DashboardScreen() {
           {item.is_negotiable ? 'Budget: ' : ''}${item.pay_amount} {item.pay_currency}
         </Text>
         <View style={styles.actionRowList}>
-          <Users size={16} color={Colors.primary} />
+          {activeTab === 'posted' && <Users size={16} color={Colors.primary} />}
           <ChevronRight size={18} color={Colors.textMuted} />
         </View>
-      </View>
-    </TouchableOpacity>
-  );
-
-  // 2. NEW GRID RENDERER (Square-ish cards, much less detail to fit 2-columns)
-  const renderGridCard = ({ item }: { item: MyJob }) => (
-    <TouchableOpacity style={styles.jobCardGrid} onPress={() => openJobDetails(item)}>
-      <View style={styles.jobCardGridContent}>
-        <View style={styles.gridIconHeader}>
-          <View style={[styles.statusCircle, { backgroundColor: item.active ? '#4ade80' : '#a1a1aa' }]} />
-          <Users size={16} color={Colors.textMuted} />
-        </View>
-
-        <Text style={styles.jobTitleGrid} numberOfLines={2}>{item.title}</Text>
-        
-        <Text style={styles.payTextGrid}>
-          ${item.pay_amount} {item.pay_currency}
-        </Text>
       </View>
     </TouchableOpacity>
   );
@@ -150,58 +153,62 @@ export default function DashboardScreen() {
     </View>
   );
 
+  const currentData = activeTab === 'posted' ? postedJobs : savedJobs;
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         
-        {/* --- HEADER WITH SIDE SWITCHER --- */}
         <View style={styles.mainHeaderRow}>
           <View>
             <Text style={styles.headerTitle}>Dashboard</Text>
-            <Text style={styles.subHeader}>{myJobs.length} Jobs Total</Text>
-          </View>
-
-          {/* NEW: Small segmented view switcher on the side */}
-          <View style={styles.switcherPill}>
-            <TouchableOpacity 
-              style={[styles.switcherBtn, viewMode === 'list' && styles.switcherBtnActive]}
-              onPress={() => setViewMode('list')}
-            >
-              <LayoutList size={16} color={viewMode === 'list' ? 'white' : '#a1a1aa'} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.switcherBtn, viewMode === 'grid' && styles.switcherBtnActive]}
-              onPress={() => setViewMode('grid')}
-            >
-              <LayoutGrid size={16} color={viewMode === 'grid' ? 'white' : '#a1a1aa'} />
-            </TouchableOpacity>
+            <Text style={styles.subHeader}>Manage your activity</Text>
           </View>
         </View>
 
-        {isLoadingJobs ? (
+        <View style={styles.tabContainer}>
+          <TouchableOpacity 
+            style={[styles.tab, activeTab === 'posted' && styles.activeTab]} 
+            onPress={() => setActiveTab('posted')}
+          >
+            <Briefcase size={16} color={activeTab === 'posted' ? 'white' : '#a1a1aa'} />
+            <Text style={[styles.tabText, activeTab === 'posted' && styles.activeTabText]}>Posted</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.tab, activeTab === 'saved' && styles.activeTab]} 
+            onPress={() => (setActiveTab('saved'), fetchDashboardData())}
+          >
+            <Bookmark size={16} color={activeTab === 'saved' ? 'white' : '#a1a1aa'} />
+            <Text style={[styles.tabText, activeTab === 'saved' && styles.activeTabText]}>Saved</Text>
+          </TouchableOpacity>
+        </View>
+
+        {isLoading ? (
           <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 50 }} />
-        ) : myJobs.length === 0 ? (
+        ) : currentData.length === 0 ? (
           <View style={styles.emptyState}>
-            <Briefcase size={48} color={Colors.textMuted} />
-            <Text style={styles.emptyText}>You haven't posted any jobs yet.</Text>
+            {activeTab === 'posted' ? (
+              <Briefcase size={48} color={Colors.textMuted} />
+            ) : (
+              <Bookmark size={48} color={Colors.textMuted} />
+            )}
+            <Text style={styles.emptyText}>
+              {activeTab === 'posted' ? "You haven't posted any jobs yet." : "You haven't saved any jobs yet."}
+            </Text>
           </View>
         ) : (
           <FlatList
-            // IMPORTANT: The `key` must change when numColumns changes in FlatList!
-            key={viewMode}
-            data={myJobs}
+            key={activeTab} 
+            data={currentData}
             keyExtractor={(item) => item.id}
-            // Dynamic columns and renderer based on state
-            numColumns={viewMode === 'grid' ? 2 : 1}
-            renderItem={viewMode === 'grid' ? renderGridCard : renderListCard}
+            renderItem={renderListCard}
             contentContainerStyle={styles.listContainer}
             showsVerticalScrollIndicator={false}
           />
         )}
       </View>
 
-      {/* --- APPLICANTS MODAL (Remains unchanged) --- */}
       <Modal visible={!!selectedJob} animationType="slide" presentationStyle="pageSheet">
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
@@ -231,6 +238,30 @@ export default function DashboardScreen() {
           )}
         </View>
       </Modal>
+
+      <Modal visible={!!previewJob} animationType="slide" transparent={false}>
+        <View style={{ flex: 1, backgroundColor: 'black' }}>
+          
+          <TouchableOpacity 
+            style={styles.closePreviewBtn} 
+            onPress={() => setPreviewJob(null)}
+          >
+            <X size={24} color="white" />
+          </TouchableOpacity>
+          
+          {previewJob && (
+            <JobCard 
+              item={previewJob} 
+              onApply={() => {
+                Alert.alert("Apply", "Application flow goes here!");
+              }} 
+              userId={userId} 
+              isActive={true}
+            />
+          )}
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -239,23 +270,21 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: Colors.background || 'black', paddingTop: Platform.OS === 'android' ? 40 : 10 },
   container: { flex: 1, paddingHorizontal: 20 },
   
-  // Header with side switcher
-  mainHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 25, marginTop: 10 },
+  mainHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, marginTop: 10 },
   headerTitle: { color: 'white', fontSize: 32, fontWeight: 'bold' },
   subHeader: { color: Colors.textMuted, fontSize: 14 },
   
-  // NEW: View Switcher Pill (Pill-shaped, aligned right)
-  switcherPill: { flexDirection: 'row', backgroundColor: '#18181b', borderRadius: 20, padding: 4, borderWidth: 1, borderColor: '#27272a', alignSelf: 'flex-start' },
-  switcherBtn: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 16 },
-  switcherBtnActive: { backgroundColor: '#3f3f46' }, // Slight highlight for the active view
+  tabContainer: { flexDirection: 'row', backgroundColor: '#18181b', borderRadius: 12, padding: 4, marginBottom: 20, borderWidth: 1, borderColor: '#27272a' },
+  tab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 8, gap: 8 },
+  activeTab: { backgroundColor: '#27272a' },
+  tabText: { color: '#a1a1aa', fontSize: 14, fontWeight: '600' },
+  activeTabText: { color: 'white' },
   
   listContainer: { paddingBottom: 40 },
 
-  // Empty State
   emptyState: { alignItems: 'center', justifyContent: 'center', marginTop: 80 },
   emptyText: { color: Colors.textMuted, fontSize: 16, marginTop: 15 },
 
-  // 1. ORIGINAL LIST CARD STYLES
   jobCardList: { backgroundColor: Colors.surface || '#18181b', borderRadius: 16, padding: 20, marginBottom: 15, borderWidth: 1, borderColor: Colors.surfaceHighlight || '#27272a' },
   jobCardListHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
   titleRow: { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 10 },
@@ -267,26 +296,13 @@ const styles = StyleSheet.create({
   payTextList: { color: Colors.textSubtle, fontSize: 14, fontWeight: '600' },
   actionRowList: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 
-  // 2. NEW GRID CARD STYLES
-  jobCardGrid: { width: '47.5%', backgroundColor: Colors.surface || '#18181b', borderRadius: 16, marginBottom: 15, marginRight: '5%', // Added gap for FlatList with 2 columns
-    borderWidth: 1, borderColor: Colors.surfaceHighlight || '#27272a' },
-  // Need to ensure FlatList renders correctly - marginRight on grid card, except for even ones
-  // Alternatively, can use columnWrapperStyle but that can cause performance issues in list re-renders.
-  // I am applying marginRight to all and then FlashList will automatically apply it differently on the odd vs even rows.
-
-  // A square, tidy structure
-  jobCardGridContent: { padding: 15, alignItems: 'flex-start' },
-  gridIconHeader: { flexDirection: 'row', width: '100%', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  statusCircle: { width: 8, height: 8, borderRadius: 4 }, // Smaller, minimalist status indicator for grid
-  jobTitleGrid: { color: 'white', fontSize: 15, fontWeight: 'bold', height: 40, marginBottom: 6 }, // Title must be smaller and take 2 lines max
-  payTextGrid: { color: Colors.textSubtle, fontSize: 13, fontWeight: '600' },
-
-  // Modal Styles (Remains unchanged)
   modalContainer: { flex: 1, backgroundColor: Colors.background || 'black', padding: 20 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 25, marginTop: Platform.OS === 'ios' ? 10 : 40 },
   modalTitle: { color: 'white', fontSize: 24, fontWeight: 'bold' },
   modalSub: { color: Colors.primary || '#8b5cf6', fontSize: 14, fontWeight: '600', marginTop: 4 },
   closeBtn: { backgroundColor: Colors.surfaceHighlight || '#27272a', padding: 8, borderRadius: 20 },
+
+  closePreviewBtn: { position: 'absolute', top: Platform.OS === 'ios' ? 60 : 40, left: 20, zIndex: 100, backgroundColor: 'rgba(24, 24, 27, 0.8)', padding: 10, borderRadius: 25, borderWidth: 1, borderColor: '#3f3f46' },
 
   applicantCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surface || '#18181b', borderRadius: 12, padding: 15, marginBottom: 10, borderWidth: 1, borderColor: Colors.surfaceHighlight || '#27272a' },
   applicantAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.surfaceHighlight || '#3f3f46', justifyContent: 'center', alignItems: 'center', marginRight: 15 },

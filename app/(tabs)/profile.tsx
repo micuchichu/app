@@ -3,14 +3,18 @@ import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Platform, Activit
 import { User, LogOut, Star, Briefcase, Lock } from 'lucide-react-native';
 import { router } from 'expo-router';
 
-import { supabase } from '../lib/supabase';
-import { Colors } from '../constants/colors';
-import { GlobalStyles } from '../constants/globalStyles';
+import { supabase } from '@/app/lib/supabase';
+import { Colors } from '@/app/constants/colors';
+import { GlobalStyles } from '@/app/constants/globalStyles';
 
 export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<any>(null);
   const [isGuest, setIsGuest] = useState(false);
+  
+  // NEW: State for both ratings
+  const [employerRating, setEmployerRating] = useState<number | null>(null);
+  const [employeeRating, setEmployeeRating] = useState<number | null>(null);
 
   useEffect(() => {
     fetchUserProfile();
@@ -34,6 +38,21 @@ export default function ProfileScreen() {
         .select('*')
         .eq('id', user.id)
         .maybeSingle();
+
+      const { data: employerData } = await supabase
+        .from('employers')
+        .select('rating')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      const { data: employeeData } = await supabase
+        .from('employees')
+        .select('rating')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      setEmployerRating(employerData?.rating || 0);
+      setEmployeeRating(employeeData?.rating || 0);
 
       if (profileError) {
         console.log("Error fetching profile from DB:", profileError);
@@ -102,18 +121,30 @@ export default function ProfileScreen() {
         <Text style={styles.profileName}>{displayName}</Text>
         <Text style={styles.profileHandle}>{currentJob} • Age {age}</Text>
         
+        {/* UPDATED: Added Employee vs Employer Rating split */}
         <View style={styles.statsRow}>
           <View style={styles.statBox}>
-            <Text style={styles.statNumber}>0</Text>
-            <Text style={styles.statLabel}>Completed</Text>
+            <Text style={styles.statNumber}>
+              {employerRating && employerRating > 0 ? employerRating.toFixed(1) : 'N/A'} <Star size={12} color="#fbbf24" />
+            </Text>
+            <Text style={styles.statLabel}>Employer</Text>
           </View>
+          <View style={styles.statBoxDivider} />
           <View style={styles.statBox}>
-            <Text style={styles.statNumber}>5.0 <Star size={14} color="#fbbf24" /></Text>
-            <Text style={styles.statLabel}>Rating</Text>
+            <Text style={styles.statNumber}>
+              {employeeRating && employeeRating > 0 ? employeeRating.toFixed(1) : 'N/A'} <Star size={12} color="#fbbf24" />
+            </Text>
+            <Text style={styles.statLabel}>Worker</Text>
           </View>
+          <View style={styles.statBoxDivider} />
           <View style={styles.statBox}>
             <Text style={styles.statNumber}>0</Text>
-            <Text style={styles.statLabel}>Active Bids</Text>
+            <Text style={styles.statLabel}>Done</Text>
+          </View>
+          <View style={styles.statBoxDivider} />
+          <View style={styles.statBox}>
+            <Text style={styles.statNumber}>0</Text>
+            <Text style={styles.statLabel}>Bids</Text>
           </View>
         </View>
       </View>
@@ -157,9 +188,11 @@ const styles = StyleSheet.create({
   profileName: { color: 'white', fontSize: 22, fontWeight: 'bold', textTransform: 'capitalize' },
   profileHandle: { color: Colors.textMuted, fontSize: 14, marginBottom: 20, fontWeight: '500' },
   
-  statsRow: { flexDirection: 'row', justifyContent: 'space-around', width: '100%', borderTopWidth: 1, borderTopColor: Colors.surfaceHighlight, paddingTop: 20 },
-  statBox: { alignItems: 'center', width: '34%' },
-  statNumber: { color: 'white', fontSize: 18, fontWeight: 'bold', flexDirection: 'row', alignItems: 'center' },
+  // UPDATED: Now perfectly spaces 4 columns using flex
+  statsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', borderTopWidth: 1, borderTopColor: Colors.surfaceHighlight, paddingTop: 20 },
+  statBox: { flex: 1, alignItems: 'center' },
+  statBoxDivider: { width: 1, height: 25, backgroundColor: Colors.surfaceHighlight },
+  statNumber: { color: 'white', fontSize: 16, fontWeight: 'bold', flexDirection: 'row', alignItems: 'center', gap: 4 },
   statLabel: { color: Colors.textMuted, fontSize: 12, marginTop: 4 },
   
   sectionTitle: { color: 'white', fontSize: 18, fontWeight: 'bold', marginBottom: 15 },
