@@ -12,14 +12,11 @@ export default function RootLayout() {
 
 
   useEffect(() => {
-    // 1. Check current session on mount
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      setIsInitialized(true); // <-- Tell the app we are ready to route!
+      setIsInitialized(true);
     });
     
-
-    // 2. Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
@@ -29,7 +26,6 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    // 3. Do not run the Auth Guard until Supabase is finished checking!
     if (!isInitialized) return;
 
     const inTabsGroup = segments[0] === '(tabs)';
@@ -41,8 +37,6 @@ export default function RootLayout() {
     }
   }, [session, segments, isInitialized]);
 
-  // 4. The Splash Screen Hold
-  // While Supabase is checking the storage, show a sleek black loading screen
   if (!isInitialized) {
     return (
       <View style={{ flex: 1, backgroundColor: 'black', justifyContent: 'center', alignItems: 'center' }}>
