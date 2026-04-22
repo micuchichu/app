@@ -8,6 +8,7 @@ import { supabase } from '@/app/lib/supabase';
 import { Colors } from '@/app/constants/colors';
 
 import JobCard, { Job } from '@/app/components/jobCard';
+import { JobPreviewModal } from '../components/jobPreviewModal';
 
 interface MyJob {
   id: string; 
@@ -239,28 +240,12 @@ export default function DashboardScreen() {
         </View>
       </Modal>
 
-      <Modal visible={!!previewJob} animationType="slide" transparent={false}>
-        <View style={{ flex: 1, backgroundColor: 'black' }}>
-          
-          <TouchableOpacity 
-            style={styles.closePreviewBtn} 
-            onPress={() => setPreviewJob(null)}
-          >
-            <X size={24} color="white" />
-          </TouchableOpacity>
-          
-          {previewJob && (
-            <JobCard 
-              item={previewJob} 
-              onApply={() => {
-                Alert.alert("Apply", "Application flow goes here!");
-              }} 
-              userId={userId} 
-              isActive={true}
-            />
-          )}
-        </View>
-      </Modal>
+      <JobPreviewModal 
+        userId={userId} 
+        onClose={() => setPreviewJob(null)} 
+        job={previewJob}
+      />
+
 
     </SafeAreaView>
   );

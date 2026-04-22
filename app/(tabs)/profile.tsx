@@ -12,7 +12,6 @@ export default function ProfileScreen() {
   const [userData, setUserData] = useState<any>(null);
   const [isGuest, setIsGuest] = useState(false);
   
-  // NEW: State for both ratings
   const [employerRating, setEmployerRating] = useState<number | null>(null);
   const [employeeRating, setEmployeeRating] = useState<number | null>(null);
 

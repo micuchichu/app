@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions, Alert } from 'react-native';
-import { Bookmark, Briefcase, DollarSign, Eye, MapPin, Share2, User } from 'lucide-react-native';
+import { Bookmark, Briefcase, DollarSign, MapPin, Share2, User } from 'lucide-react-native';
 
 import { useVideoPlayer, VideoView } from 'expo-video';
 
-// NEW: Import your supabase client!
 import { supabase } from '@/app/lib/supabase';
 import { trackEvent } from '@/app/lib/ranking'; 
 import { Colors } from '@/app/constants/colors'; 
+
+import { ProfileModal } from '@/app/components/profileModal'; 
 
 const { width, height } = Dimensions.get('window');
 
@@ -33,6 +34,7 @@ export interface Job {
 
 export default function JobCard({ item, onApply, userId, isActive }: { item: Job; onApply: () => void; userId: string | null; isActive: boolean; }) {
   const [isSaved, setIsSaved] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   const player = useVideoPlayer(item.video_url || null, player => {
     player.loop = true;
@@ -42,7 +44,7 @@ export default function JobCard({ item, onApply, userId, isActive }: { item: Job
   const fetchSaveStatus = async () => {
     if (!userId) return;
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('job_saves')
       .select('job_posting_id')
       .eq('user_id', userId)
@@ -79,53 +81,30 @@ export default function JobCard({ item, onApply, userId, isActive }: { item: Job
     setIsSaved(newSavedState);
 
     if (newSavedState) {
-      const { error } = await supabase
-        .from('job_saves')
-        .insert({ user_id: userId, job_posting_id: item.id });
-
-      if (error) {
-        console.error("Error saving job:", error);
-        setIsSaved(false);
-      } else {
-        await trackEvent(userId, item.id, 'save');
-      }
+      const { error } = await supabase.from('job_saves').insert({ user_id: userId, job_posting_id: item.id });
+      if (error && error.code !== '23505') setIsSaved(false);
+      else if (!error) await trackEvent(userId, item.id, 'save');
     } else {
-      const { error } = await supabase
-        .from('job_saves')
-        .delete()
-        .eq('user_id', userId)
-        .eq('job_posting_id', item.id);
-
-      if (error) {
-        console.error("Error removing saved job:", error);
-        setIsSaved(true);
-      }
+      const { error } = await supabase.from('job_saves').delete().eq('user_id', userId).eq('job_posting_id', item.id);
+      if (error) setIsSaved(true);
     }
   };
 
   const employerName = item.employers?.profiles?.full_name || 'Unknown Employer';
+  const employerRating = item.employers?.rating || 0;
+  const isVerified = item.employers?.verified || false;
   
   const cityName = item.locations?.city_name || 'Remote';
   const formattedPay = `${item.is_negotiable ? 'Max ' : ''}${item.pay_amount} ${item.pay_currency}`;
-
   const fallbackImage = "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80";
 
   return (
     <View style={styles.jobCard}>
       
       {item.video_url ? (
-        <VideoView
-          player={player}
-          style={styles.bgImage}
-          contentFit="cover"
-          allowsFullscreen={false}
-          nativeControls={false}
-        />
+        <VideoView player={player} style={styles.bgImage} contentFit="cover" fullscreenOptions={{enable: true}} nativeControls={false} />
       ) : (
-        <Image 
-          source={{ uri: item.thumbnail_url || fallbackImage }} 
-          style={styles.bgImage} 
-        />
+        <Image source={{ uri: item.thumbnail_url || fallbackImage }} style={styles.bgImage} />
       )}
 
       <View style={styles.darkOverlay} />
@@ -148,25 +127,34 @@ export default function JobCard({ item, onApply, userId, isActive }: { item: Job
         </View>
 
         <View style={styles.actionButtonsContainer}>
-          <TouchableOpacity style={styles.actionIcon}>
+          <TouchableOpacity style={styles.actionIcon} onPress={() => setIsProfileModalOpen(true)}>
             <View style={styles.profilePicPlaceholder}><User size={24} color="white" /></View>
           </TouchableOpacity>
+          
           <TouchableOpacity style={styles.actionIcon} onPress={handleSave}>
             <Bookmark size={28} color={isSaved ? "#fbbf24" : "white"} fill={isSaved ? "#fbbf24" : "transparent"} />
             <Text style={styles.actionText}>{isSaved ? "Saved" : "Save"}</Text>
           </TouchableOpacity>
+          
           <TouchableOpacity style={styles.actionIcon}>
             <Share2 size={28} color="white" />
             <Text style={styles.actionText}>Share</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.applyBtnBubble, { backgroundColor: item.is_negotiable ? Colors.primary : '#2563eb' }]}
-            onPress={onApply}
-          >
+          
+          <TouchableOpacity style={[styles.applyBtnBubble, { backgroundColor: item.is_negotiable ? Colors.primary : '#2563eb' }]} onPress={onApply}>
             <Text style={styles.applyBtnText}>{item.is_negotiable ? 'BID' : 'APPLY'}</Text>
           </TouchableOpacity>
         </View>
       </View>
+
+      <ProfileModal 
+        visible={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        employerName={employerName}
+        employerRating={employerRating}
+        isVerified={isVerified}
+      />
+
     </View>
   );
 }

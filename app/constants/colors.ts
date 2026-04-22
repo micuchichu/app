@@ -1,8 +1,8 @@
 export const Colors = {
   background: 'black',
-  surface: '#18181b', // dark gray for cards/inputs
-  surfaceHighlight: '#27272a', // lighter gray for borders
-  primary: '#8b5cf6', // purple
+  surface: '#18181b',
+  surfaceHighlight: '#27272a',
+  primary: '#8b5cf6',
   primaryHover: '#7c3aed',
   text: 'white',
   textMuted: '#a1a1aa',
