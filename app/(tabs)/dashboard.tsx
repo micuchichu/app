@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Modal, Platform, Alert, DeviceEventEmitter } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Briefcase, Users, ChevronRight, X, DollarSign, Clock, Bookmark } from 'lucide-react-native';
+import { Bookmark, Briefcase, ChevronRight, Clock, DollarSign, Users, X } from 'lucide-react-native';
 
-import { supabase } from '@/app/lib/supabase';
-import { Colors } from '@/app/constants/colors';
+import { Colors } from '@/constants/colors';
+import { supabase } from '@/lib/supabase';
 
-import JobCard, { Job } from '@/app/components/jobCard';
-import { JobPreviewModal } from '../components/jobPreviewModal';
+import { Job } from '@/components/jobCard';
+import { JobPreviewModal } from '@/components/jobPreviewModal';
 
 interface MyJob {
   id: string; 

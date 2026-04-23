@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions, Alert } from 'react-native';
 import { Bookmark, Briefcase, DollarSign, MapPin, Share2, User } from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
+import { Alert, Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { useVideoPlayer, VideoView } from 'expo-video';
 
-import { supabase } from '@/app/lib/supabase';
-import { trackEvent } from '@/app/lib/ranking'; 
-import { Colors } from '@/app/constants/colors'; 
+import { Colors } from '@/constants/colors';
+import { trackEvent } from '@/lib/ranking';
+import { supabase } from '@/lib/supabase';
 
-import { ProfileModal } from '@/app/components/profileModal'; 
+import { ProfileModal } from '@/components/profileModal';
 
 const { width, height } = Dimensions.get('window');
 

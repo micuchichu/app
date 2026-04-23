@@ -1,12 +1,18 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { 
-  StyleSheet, Text, View, TouchableOpacity, 
-  ScrollView, Dimensions, Platform, KeyboardAvoidingView, ActivityIndicator
-} from 'react-native';
 import { Lock } from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet, Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
 
+import { supabase } from '@/lib/supabase';
 import { HireTab } from './hire';
-import { supabase } from '@/app/lib/supabase';
 
 const screenWidth = Dimensions.get('window').width;
 const contentWidth = screenWidth - 40;

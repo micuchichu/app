@@ -1,8 +1,8 @@
-import React from 'react';
-import { Modal, View, TouchableOpacity, StyleSheet, Platform, Alert } from 'react-native';
 import { X } from 'lucide-react-native';
+import React from 'react';
+import { Alert, Modal, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 
-import JobCard, { Job } from '@/app/components/jobCard';
+import JobCard, { Job } from '@/components/jobCard';
 
 interface JobPreviewModalProps {
   job: Job | null;

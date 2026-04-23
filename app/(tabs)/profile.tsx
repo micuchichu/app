@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Platform, ActivityIndicator, Alert } from 'react-native';
-import { User, LogOut, Star, Briefcase, Lock } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { Briefcase, Lock, LogOut, Star, User } from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { supabase } from '@/app/lib/supabase';
-import { Colors } from '@/app/constants/colors';
-import { GlobalStyles } from '@/app/constants/globalStyles';
+import { Colors } from '@/constants/colors';
+import { GlobalStyles } from '@/constants/globalStyles';
+import { supabase } from '@/lib/supabase';
 
 export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);

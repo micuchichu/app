@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet, Animated, PanResponder, Dimensions, ScrollView, Platform, Alert } from 'react-native';
-import { User, X, Star, BadgeCheck, MapPin, Calendar } from 'lucide-react-native';
-import { Colors } from '@/app/constants/colors';
+import { Colors } from '@/constants/colors';
+import { BadgeCheck, Calendar, MapPin, Star, User, X } from 'lucide-react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Dimensions, Modal, PanResponder, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 

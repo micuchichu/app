@@ -1,20 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ActivityIndicator, Modal } from 'react-native';
-import { ChevronDown, Map as MapIcon, MapPinnedIcon, MapPin, InfoIcon } from 'lucide-react-native';
 import * as Location from 'expo-location';
-import * as Localization from 'expo-localization';
+import { ChevronDown, InfoIcon, Map as MapIcon, MapPin, MapPinnedIcon } from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
+import { useJobSubmit } from '@/hooks/jobSubmit';
+import { useLocationManager } from '@/hooks/locationManager';
 import { styles } from './post';
-import { useLocationManager } from '@/app/hooks/locationManager';
-import { useJobSubmit } from '@/app/hooks/jobSubmit';
 
-import Switch from '@/app/components/switch';
-import { MapPickerModal } from '@/app/components/mapPickerModal';
-import { LocationDropdownModal } from '@/app/components/locationDropdownModal';
-import InfoModal from '@/app/components/infoModal';
-import { MediaPickerBox } from '@/app/components/mediaPickerBox';
-import { getDefaultCurrency, Currency } from '@/app/hooks/utils';
-import { supabase } from '@/app/lib/supabase';
+import InfoModal from '@/components/infoModal';
+import { LocationDropdownModal } from '@/components/locationDropdownModal';
+import { MapPickerModal } from '@/components/mapPickerModal';
+import { MediaPickerBox } from '@/components/mediaPickerBox';
+import Switch from '@/components/switch';
+import { Currency, getDefaultCurrency } from '@/hooks/utils';
+import { supabase } from '@/lib/supabase';
 
 export function HireTab() {
     const locManager = useLocationManager();

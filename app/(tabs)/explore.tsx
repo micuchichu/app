@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, Platform, FlatList, ActivityIndicator, Alert } from 'react-native';
+import { Briefcase, ChevronRight, Filter, Map, MapPin, Search, User } from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Search, Map, Filter, MapPin, Briefcase, ChevronRight, User } from 'lucide-react-native';
 
-import { supabase } from '@/app/lib/supabase';
-import { Colors } from '@/app/constants/colors';
-import { FilterState, JobFilterModal } from '@/app/components/jobFilterModal';
-import { JobsMapModal } from '@/app/components/jobsMapModal';
-import { JobPreviewModal } from '@/app/components/jobPreviewModal';
-import { Job } from '@/app/components/jobCard';
-import { ProfileModal } from '@/app/components/profileModal';
+import { Job } from '@/components/jobCard';
+import { FilterState, JobFilterModal } from '@/components/jobFilterModal';
+import { JobPreviewModal } from '@/components/jobPreviewModal';
+import { JobsMapModal } from '@/components/jobsMapModal';
+import { ProfileModal } from '@/components/profileModal';
+import { Colors } from '@/constants/colors';
+import { supabase } from '@/lib/supabase';
 
 export default function ExploreScreen() {
   const [searchQuery, setSearchQuery] = useState('');

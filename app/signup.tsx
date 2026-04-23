@@ -4,13 +4,13 @@ import { ArrowLeft, ArrowRight, CalendarIcon, Check, ChevronDown, MapIcon } from
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Image, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-import { supabase } from './lib/supabase';
+import { supabase } from '../lib/supabase';
 
-import { CountryPickerModal } from './components/countryPickerModal';
-import { DatePickerModal } from './components/datePickerModal';
-import { MapPickerModal } from './components/mapPickerModal';
-import { useLocationManager } from './hooks/locationManager';
-import { CountryRecord, useSignupData } from './hooks/signupData';
+import { CountryPickerModal } from '../components/countryPickerModal';
+import { DatePickerModal } from '../components/datePickerModal';
+import { MapPickerModal } from '../components/mapPickerModal';
+import { useLocationManager } from '../hooks/locationManager';
+import { CountryRecord, useSignupData } from '../hooks/signupData';
 
 import * as Linking from 'expo-linking';
 

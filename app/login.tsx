@@ -3,10 +3,8 @@ import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { supabase } from './lib/supabase';
+import { supabase } from '../lib/supabase';
 
-import { GlobalStyles } from './constants/globalStyles';
-import { Colors } from './constants/colors';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -31,9 +29,9 @@ export default function LoginScreen() {
     setLoading(false);
   }
 
-  async function signInWithGoogle() {
+async function signInWithGoogle() {
   setLoading(true);
-  const redirectTo = AuthSession.makeRedirectUri({ scheme: 'app' });
+  const redirectTo = AuthSession.makeRedirectUri({ scheme: 'microjobs' }); // ✅ was 'app'
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
@@ -43,17 +41,20 @@ export default function LoginScreen() {
     },
   });
 
-  if (error) { Alert.alert('Error', error.message); setLoading(false); return; }
+  if (error) {
+    Alert.alert('Error', error.message);
+    setLoading(false);
+    return;
+  }
 
   const result = await WebBrowser.openAuthSessionAsync(data.url!, redirectTo);
 
   if (result.type === 'success') {
-    const url = result.url;
-    const { data: sessionData, error: sessionError } = await supabase.auth.exchangeCodeForSession(
-      new URL(url).searchParams.get('code')!
-    );
+    const { error: sessionError } = await supabase.auth.exchangeCodeForSession(result.url); // ✅ pass full URL, not just the code
     if (!sessionError) router.replace('/(tabs)/feed');
+    else Alert.alert('Error', sessionError.message);
   }
+
   setLoading(false);
 }
 
