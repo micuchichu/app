@@ -27,7 +27,8 @@ export interface Job {
   employers?: { 
     rating?: number;
     verified?: boolean;
-    profiles?: { full_name?: string } | null 
+    profiles?: { full_name?: string } | null; 
+    id?: string | null;
   } | null; 
   locations?: { city_name?: string } | null; 
 }
@@ -150,9 +151,8 @@ export default function JobCard({ item, onApply, userId, isActive }: { item: Job
       <ProfileModal 
         visible={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
-        employerName={employerName}
-        employerRating={employerRating}
-        isVerified={isVerified}
+        userId={item.employers?.id || null}
+        fallbackName={employerName}
       />
 
     </View>

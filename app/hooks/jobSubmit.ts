@@ -110,7 +110,7 @@ export const useJobSubmit = (locManager: any) => {
             schedule_type: scheduleType.toLowerCase(), 
             pay_amount: isNaN(cleanPay) ? 0 : cleanPay,
             
-            pay_currency: selectedCurrency, 
+            currency_id: selectedCurrency, 
             
             is_negotiable: isNegotiable, 
             people_needed: parseInt(peopleNeeded) || 1, 

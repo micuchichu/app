@@ -264,9 +264,8 @@ export default function ExploreScreen() {
         <ProfileModal 
           visible={!!selectedProfile}
           onClose={() => setSelectedProfile(null)}
-          employerName={selectedProfile?.full_name || 'Anonymous User'}
-          employerRating={0} // You can fetch real ratings later if you want!
-          isVerified={false}
+          userId={selectedProfile?.id}
+          fallbackName={selectedProfile?.full_name} 
         />
 
       </View>

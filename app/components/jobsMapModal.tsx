@@ -131,7 +131,7 @@ export const JobsMapModal = ({ visible, onClose }: JobsMapModalProps) => {
     const { data, error } = await supabase
       .from('job_postings')
       .select(`
-        id:job_id, title, description, pay_amount, pay_currency, schedule_type, 
+        id:job_id, title, description, pay_amount, currency_id, schedule_type, 
         work_mode, is_negotiable, people_needed, is_sponsored, save_count, thumbnail_url,
         locations!job_location_id ( latitude, longitude )
       `)
