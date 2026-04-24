@@ -3,18 +3,15 @@ import * as Linking from 'expo-linking';
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/app/lib/supabase';
 
 export default function AuthCallback() {
   const router = useRouter();
 
   useEffect(() => {
     const handleUrl = async (url: string) => {
-      // Supabase puts tokens in the URL fragment (#) as query params
-      // e.g. micuapp://auth/callback#access_token=...&refresh_token=...
       const parsed = Linking.parse(url);
 
-      // Tokens can be in the fragment (hash) or query params
       const fragment = url.split('#')[1] ?? '';
       const params = Object.fromEntries(new URLSearchParams(fragment));
 

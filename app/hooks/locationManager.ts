@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Alert } from 'react-native';
 import * as Location from 'expo-location';
 import { supabase } from '../lib/supabase';
+import { useAlert } from '@/app/components/alertContext';
 
 export interface LocationRecord {
   id: number;
@@ -15,6 +15,7 @@ export function useLocationManager() {
     const [selectedLocId, setSelectedLocId] = useState<number | null>(null);
     const [isGettingLocation, setIsGettingLocation] = useState(false);
     const [gpsData, setGpsData] = useState<{ city_name: string, country_code: string, latitude: number, longitude: number } | null>(null);
+    const { showAlert } = useAlert();
 
     useEffect(() => {
         fetchLocations();
@@ -22,7 +23,7 @@ export function useLocationManager() {
 
     const fetchLocations = async () => {
         setIsLoadingLocations(true);
-        const { data } = await supabase.from('location').select('id, city_name, country_code').order('city_name', { ascending: true });
+        const { data } = await supabase.from('locations').select('id, city_name, country_code').order('city_name', { ascending: true });
         if (data) setLocations(data);
         setIsLoadingLocations(false);
     };
@@ -38,7 +39,7 @@ export function useLocationManager() {
             setGpsData({ city_name: detectedCity, country_code: detectedCountry, latitude: approxLat, longitude: approxLng });
             setSelectedLocId(null); 
         } else {
-            Alert.alert("Error", "Could not identify the city for this location.");
+            showAlert("Error", "Could not identify the city for this location.");
         }
     };
 
@@ -50,7 +51,7 @@ export function useLocationManager() {
             let location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
             await processCoordinates(location.coords.latitude, location.coords.longitude);
         } catch (error) {
-            Alert.alert("Location Error", "Could not fetch GPS. Try using the map.");
+            showAlert("Location Error", "Could not fetch GPS. Try using the map.");
         }
         setIsGettingLocation(false);
     };

@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { AsYouType, isValidPhoneNumber } from 'libphonenumber-js';
 import { ArrowLeft, ArrowRight, CalendarIcon, Check, ChevronDown, MapIcon } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Image, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Animated, Image, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { supabase } from './lib/supabase';
 
@@ -11,6 +11,7 @@ import { DatePickerModal } from './components/datePickerModal';
 import { MapPickerModal } from './components/mapPickerModal';
 import { useLocationManager } from './hooks/locationManager';
 import { CountryRecord, useSignupData } from './hooks/signupData';
+import { useAlert } from '@/app/components/alertContext';
 
 import * as Linking from 'expo-linking';
 
@@ -22,6 +23,7 @@ export default function SignupScreen() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const { showAlert } = useAlert();
 
   const markTouched = (field: string) => setTouched(prev => ({ ...prev, [field]: true }));
 
@@ -93,7 +95,7 @@ export default function SignupScreen() {
     if (step === 3) {
       setTouched(prev => ({ ...prev, currentJob: true }));
       if (currentJob.trim().length === 0) return false;
-      if (selectedTags.length === 0) { Alert.alert("Required", "Please select at least one skill."); return false; }
+      if (selectedTags.length === 0) { showAlert("Required", "Please select at least one skill."); return false; }
     }
     return true;
   };
@@ -115,7 +117,7 @@ export default function SignupScreen() {
   const toggleTag = (skillName: string) => {
     if (selectedTags.includes(skillName)) setSelectedTags(selectedTags.filter(t => t !== skillName));
     else {
-      if (selectedTags.length >= 5) return Alert.alert("Limit Reached", "Max 5 skills allowed.");
+      if (selectedTags.length >= 5) return showAlert("Limit Reached", "Max 5 skills allowed.");
       setSelectedTags([...selectedTags, skillName]);
     }
   };
@@ -185,12 +187,12 @@ export default function SignupScreen() {
 
       if (profileError) throw profileError;
 
-      Alert.alert('Welcome!', 'Account created successfully.');
+      showAlert('Welcome!', 'Account created successfully.');
       router.replace('/(tabs)/profile');
 
     } catch (error: any) {
       console.error("Signup Error:", error);
-      Alert.alert('Error', error.message || 'Something went wrong during signup.');
+      showAlert('Error', error.message || 'Something went wrong during signup.');
     } finally {
       setLoading(false);
     }
@@ -242,13 +244,6 @@ export default function SignupScreen() {
             </TouchableOpacity>
             
             {isUnderageError && <Text style={styles.errorText}>You must be at least 16 years old.</Text>}
-
-            <DatePickerModal 
-              visible={showDatePicker}
-              date={birthDate}
-              onClose={() => setShowDatePicker(false)}
-              onChange={handleDateChange}
-            />
 
             <DatePickerModal 
               visible={showDatePicker}

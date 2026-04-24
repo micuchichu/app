@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Platform, ActivityIndicator, Alert } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Platform, ActivityIndicator } from 'react-native';
 import { User, LogOut, Star, Briefcase, Lock } from 'lucide-react-native';
 import { router } from 'expo-router';
 
 import { supabase } from '@/app/lib/supabase';
 import { Colors } from '@/app/constants/colors';
 import { GlobalStyles } from '@/app/constants/globalStyles';
+import { useAlert } from '@/app/components/alertContext';
 
 export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
@@ -14,6 +15,7 @@ export default function ProfileScreen() {
   
   const [employerRating, setEmployerRating] = useState<number | null>(null);
   const [employeeRating, setEmployeeRating] = useState<number | null>(null);
+  const { showAlert } = useAlert();
 
   useEffect(() => {
     fetchUserProfile();
@@ -69,7 +71,7 @@ export default function ProfileScreen() {
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
-      Alert.alert("Error signing out", error.message);
+      showAlert("Error signing out", error.message);
     } else {
       router.replace('/login');
     }

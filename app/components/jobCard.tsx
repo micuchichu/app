@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions, Alert } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { Bookmark, Briefcase, DollarSign, MapPin, Share2, User } from 'lucide-react-native';
 
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -9,6 +9,7 @@ import { trackEvent } from '@/app/lib/ranking';
 import { Colors } from '@/app/constants/colors'; 
 
 import { ProfileModal } from '@/app/components/profileModal'; 
+import { useAlert } from './alertContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -36,6 +37,7 @@ export interface Job {
 export default function JobCard({ item, onApply, userId, isActive }: { item: Job; onApply: () => void; userId: string | null; isActive: boolean; }) {
   const [isSaved, setIsSaved] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const { showAlert } = useAlert();
 
   const player = useVideoPlayer(item.video_url || null, player => {
     player.loop = true;
@@ -74,7 +76,7 @@ export default function JobCard({ item, onApply, userId, isActive }: { item: Job
 
   const handleSave = async () => {
     if (!userId) {
-      Alert.alert("Sign In Required", "You need to be signed in to save jobs.");
+      showAlert("Sign In Required", "You need to be signed in to save jobs.");
       return;
     }
 

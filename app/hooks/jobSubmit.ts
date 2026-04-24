@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
 import { supabase } from '../lib/supabase';
 import { getDefaultCurrency } from './utils';
 import { uploadMediaToSupabase } from '../lib/mediaUpload';
+import { useAlert } from '@/app/components/alertContext';
 
 export const useJobSubmit = (locManager: any) => {
     const [title, setTitle] = useState('');
@@ -18,10 +18,11 @@ export const useJobSubmit = (locManager: any) => {
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [uploadStatus, setUploadStatus] = useState('');
+    const { showAlert } = useAlert();
 
     const handlePostJob = async (selectedCurrency: string) => {
         if (!title || !payAmount || !description || (!locManager.selectedLocId && !locManager.gpsData)) {
-            Alert.alert("Missing Info", "Please fill out all required fields and set a location.");
+            showAlert("Missing Info", "Please fill out all required fields and set a location.");
             return;
         }
 
@@ -29,7 +30,7 @@ export const useJobSubmit = (locManager: any) => {
         setUploadStatus('Saving location...');
 
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { Alert.alert("Error", "You must be logged in."); setIsSubmitting(false); return; }
+        if (!user) { showAlert("Error", "You must be logged in."); setIsSubmitting(false); return; }
 
         let finalLocationId = locManager.selectedLocId;
 
@@ -43,30 +44,36 @@ export const useJobSubmit = (locManager: any) => {
                 }]).select('id').single();
 
             if (locError) { 
-                Alert.alert("Supabase Error", locError.message); 
+                showAlert("Supabase Error", locError.message); 
                 setIsSubmitting(false); 
                 return; 
             }
             if (!newLoc) {
-                Alert.alert("Location Error", "Location saved, but database didn't return an ID.");
+                showAlert("Location Error", "Location saved, but database didn't return an ID.");
                 setIsSubmitting(false);
                 return;
             }
             finalLocationId = newLoc.id;
         }
 
-        let finalThumbnailUrl = "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80";
-        let finalVideoUrl = null;
+        let finalThumbnailUrl: string | null = null;
+        let finalVideoUrl: string | null = null;
 
         if (media) {
             setUploadStatus('Uploading media...');
-            const uploadedUrl = await uploadMediaToSupabase(media.uri, media.type);
+            const uploadResult = await uploadMediaToSupabase(media.uri, media.type);
             
-            if (uploadedUrl) {
-                if (media.type === 'video') finalVideoUrl = uploadedUrl;
-                else finalThumbnailUrl = uploadedUrl;
+            if (uploadResult) {
+                if (media.type === 'video') {
+                    finalVideoUrl = uploadResult.mediaUrl;
+                    finalThumbnailUrl = uploadResult.thumbnailUrl;
+                } else {
+                    finalThumbnailUrl = uploadResult.mediaUrl;
+                }
             } else {
-                Alert.alert("Upload Failed", "Could not upload your media. Proceeding with placeholder.");
+                showAlert("Upload Failed", "Could not upload your media. Please try again.");
+                setIsSubmitting(false);
+                return;
             }
         }
 
@@ -79,7 +86,7 @@ export const useJobSubmit = (locManager: any) => {
             .maybeSingle();
 
         if (employerFetchError) {
-            Alert.alert("Database Error", employerFetchError.message);
+            showAlert("Database Error", employerFetchError.message);
             setIsSubmitting(false);
             return;
         }
@@ -89,12 +96,12 @@ export const useJobSubmit = (locManager: any) => {
         if (!existingEmployer) {
             const { data: newEmployer, error: insertError } = await supabase
                 .from('employers')
-                .insert([{ id: user.id, rating: -1, verified: false, active_user: true, job_postings_made: 1 }])
+                .insert([{ id: user.id, rating: 0, verified: false, active_user: true, job_postings_made: 1 }])
                 .select('id')
                 .single();
 
             if (insertError) {
-                Alert.alert("Employer Creation Error", insertError.message);
+                showAlert("Employer Creation Error", insertError.message);
                 setIsSubmitting(false);
                 return;
             }
@@ -124,9 +131,9 @@ export const useJobSubmit = (locManager: any) => {
         setIsSubmitting(false);
         setUploadStatus('');
 
-        if (jobError) Alert.alert("Database Error", jobError.message);
+        if (jobError) showAlert("Database Error", jobError.message);
         else {
-            Alert.alert("Success!", "Your job has been posted.");
+            showAlert("Success!", "Your job has been posted.");
             setTitle(''); setPayAmount(''); setDescription(''); setMedia(null);
             locManager.setSelectedLocId(null); locManager.setGpsData(null);
         }

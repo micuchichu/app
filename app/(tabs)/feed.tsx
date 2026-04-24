@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Dimensions, StyleSheet, View } from 'react-native';
+import { Dimensions, StyleSheet, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 
 import { supabase } from '@/app/lib/supabase';
@@ -8,6 +8,7 @@ import { GlobalStyles } from '@/app/constants/globalStyles';
 
 import JobCard, { Job } from '@/app/components/jobCard';
 import { BiddingModal } from '@/app/components/biddingModal'; 
+import { useAlert } from '@/app/components/alertContext';
 
 const { height } = Dimensions.get('window');
 
@@ -18,6 +19,7 @@ export default function FeedScreen() {
   
   const [biddingJob, setBiddingJob] = useState<Job | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const { showAlert } = useAlert();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setUserId(user?.id ?? null));
@@ -47,7 +49,7 @@ export default function FeedScreen() {
 
     if (error) {
       console.error("Fetch error details:", error);
-      Alert.alert('Error fetching jobs', error.message);
+      showAlert('Error fetching jobs', error.message);
     } else {
       setJobs(data || []);
     }
@@ -60,7 +62,7 @@ export default function FeedScreen() {
       setBiddingJob(job);
     } else {
       if (userId) await trackEvent(userId, job.id, 'apply');
-      Alert.alert('Applied!', `Your application to ${job.employers?.profiles?.full_name || 'the employer'} has been sent.`);
+      showAlert('Applied!', `Your application to ${job.employers?.profiles?.full_name || 'the employer'} has been sent.`);
     }
   };
 

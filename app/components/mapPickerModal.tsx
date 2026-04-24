@@ -1,12 +1,14 @@
 import React, { useRef } from 'react';
-import { Alert, Modal, View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Image } from 'react-native';
+import { Modal, View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Image } from 'react-native';
 import MapView from 'react-native-maps';
 import { MapPin, LocateFixed, X } from 'lucide-react-native';
 import * as Location from 'expo-location';
+import { useAlert } from './alertContext';
 
 export const MapPickerModal = ({ visible, region, onRegionChange, onClose, onConfirm }: any) => {
     const mapRef = useRef<MapView>(null);
     const [isLocating, setIsLocating] = React.useState(false);
+    const { showAlert } = useAlert();
 
     const handleLocateMe = async () => {
         setIsLocating(true);
@@ -22,7 +24,7 @@ export const MapPickerModal = ({ visible, region, onRegionChange, onClose, onCon
                     longitudeDelta: 0.05,
                 }, 1000); 
             } else {
-              Alert.alert('Permission Denied', 'Please enable location permissions in your settings to use this feature.');
+              showAlert('Permission Denied', 'Please enable location permissions in your settings to use this feature.');
             }
         } catch (error) {
             console.log("Could not locate user", error);

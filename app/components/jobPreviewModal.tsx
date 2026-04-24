@@ -1,8 +1,9 @@
 import React from 'react';
-import { Modal, View, TouchableOpacity, StyleSheet, Platform, Alert } from 'react-native';
+import { Modal, View, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { X } from 'lucide-react-native';
 
 import JobCard, { Job } from '@/app/components/jobCard';
+import { useAlert } from './alertContext';
 
 interface JobPreviewModalProps {
   job: Job | null;
@@ -11,6 +12,8 @@ interface JobPreviewModalProps {
 }
 
 export function JobPreviewModal({ job, onClose, userId }: JobPreviewModalProps) {
+  const { showAlert } = useAlert();
+
   return (
     <Modal visible={!!job} animationType="fade" transparent={false}>
       <View style={{ flex: 1, backgroundColor: 'black' }}>
@@ -26,7 +29,7 @@ export function JobPreviewModal({ job, onClose, userId }: JobPreviewModalProps) 
           <JobCard 
             item={job} 
             onApply={() => {
-              Alert.alert("Apply", "Application flow goes here!");
+              showAlert("Apply", "Application flow goes here!");
             }} 
             userId={userId} 
             isActive={true}

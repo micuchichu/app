@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Modal, View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, StyleSheet, Alert } from 'react-native';
+import { Modal, View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
 import { DollarSign, X } from 'lucide-react-native';
 
 import { trackEvent } from '@/app/lib/ranking'; 
 import { GlobalStyles } from '@/app/constants/globalStyles';
 import { Colors } from '@/app/constants/colors';
 import { Job } from './jobCard';
+import { useAlert } from './alertContext';
 
 interface BiddingModalProps {
   visible: boolean;
@@ -16,12 +17,13 @@ interface BiddingModalProps {
 
 export const BiddingModal = ({ visible, job, userId, onClose }: BiddingModalProps) => {
   const [bidAmount, setBidAmount] = useState('');
+  const { showAlert } = useAlert();
 
   const handleSubmit = async () => {
     if (userId && job) {
       await trackEvent(userId, job.id, 'bid');
     }
-    Alert.alert('Bid Sent!');
+    showAlert('Bid Sent!');
     setBidAmount('');
     onClose();
   };

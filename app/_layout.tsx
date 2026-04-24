@@ -3,6 +3,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { supabase } from './lib/supabase';
+import { AlertProvider } from './components/alertContext';
 
 export default function RootLayout() {
   const [session, setSession] = useState<Session | null>(null);
@@ -46,9 +47,11 @@ export default function RootLayout() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="login" options={{ presentation: 'modal' }} />
-    </Stack>
+    <AlertProvider>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="login" options={{ presentation: 'modal' }} />
+      </Stack>
+    </AlertProvider>
   );
 }

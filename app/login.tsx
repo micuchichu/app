@@ -1,29 +1,47 @@
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { supabase } from './lib/supabase';
 
 import { GlobalStyles } from './constants/globalStyles';
 import { Colors } from './constants/colors';
+import { useAlert } from '@/app/components/alertContext';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const { showAlert } = useAlert();
 
   async function signInWithEmail() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) Alert.alert('Error', error.message);
+    if (error) showAlert('Error', error.message);
     else router.replace('/(tabs)/profile');
     setLoading(false);
   }
 
   async function signInAsGuest() {
     setLoading(true);
-    const { error } = await supabase.auth.signInAnonymously();
-    if (error) Alert.alert('Error', error.message);
-    else router.replace('/(tabs)/feed');
+    const { data, error } = await supabase.auth.signInAnonymously();
+    if (error) {
+      showAlert('Error', error.message);
+    } else if (data.user) {
+      // Create a default profile for the guest user to prevent joining errors
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert([{
+          id: data.user.id,
+          full_name: 'Guest User',
+          email: `guest_${data.user.id.substring(0, 8)}@anonymous.local`,
+          age: 18, // Default age
+        }], { onConflict: 'id' });
+
+      if (profileError) {
+        console.error("Guest profile creation error:", profileError);
+      }
+      router.replace('/(tabs)/feed');
+    }
     setLoading(false);
   }
 

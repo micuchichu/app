@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Modal, View, TouchableOpacity, StyleSheet, ActivityIndicator, Platform, Animated, PanResponder, Dimensions, Text } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import { ArrowLeft, MapPin, Filter } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Filter, Compass, LocateFixed } from 'lucide-react-native'; // <-- NEW ICONS
 import * as Location from 'expo-location';
 
 import { supabase } from '@/app/lib/supabase';
@@ -10,10 +10,9 @@ import { JobFilterModal, FilterState } from './jobFilterModal';
 import MapBottomSheet from './mapBottomSheet';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-
 const HIDDEN_Y = SCREEN_HEIGHT;
-const SMALL_Y = SCREEN_HEIGHT - 240; 
-const CLUSTER_Y = SMALL_Y - 30;
+const SMALL_Y = SCREEN_HEIGHT - 240;
+const CLUSTER_Y = SMALL_Y - 30; 
 const EXPANDED_Y = SCREEN_HEIGHT * 0.15;
 
 interface JobsMapModalProps {
@@ -44,6 +43,29 @@ export const JobsMapModal = ({ visible, onClose }: JobsMapModalProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const isExpandedRef = useRef(false); 
   const panY = useRef(new Animated.Value(HIDDEN_Y)).current;
+
+  // --- NEW: Map Control Functions ---
+  const handleReorientNorth = () => {
+    // Animates the camera rotation back to 0 (North) and resets tilt (pitch)
+    mapRef.current?.animateCamera({ heading: 0, pitch: 0 }, { duration: 400 });
+  };
+
+  const handleRelocate = async () => {
+    let { status } = await Location.requestForegroundPermissionsAsync();
+    if (status === 'granted') {
+      let location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const newRegion = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        latitudeDelta: 0.1,
+        longitudeDelta: 0.1,
+      };
+      setMapRegion(newRegion);
+      setZoomDelta(0.1);
+      // Smoothly fly the camera back to the user
+      mapRef.current?.animateToRegion(newRegion, 500);
+    }
+  };
 
   const getDistanceInKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     const R = 6371;
@@ -170,7 +192,6 @@ export const JobsMapModal = ({ visible, onClose }: JobsMapModalProps) => {
       },
       onPanResponderRelease: (_, gestureState) => {
         const hasSelection = selectedRef.current.job !== null || selectedRef.current.cluster !== null;
-        
         const isClusterOnly = selectedRef.current.cluster && !selectedRef.current.job;
         const targetSmallY = isClusterOnly ? CLUSTER_Y : SMALL_Y;
 
@@ -281,6 +302,22 @@ export const JobsMapModal = ({ visible, onClose }: JobsMapModalProps) => {
           })}
         </MapView>
 
+        {/* --- NEW: Map Action Buttons (Right Sidebar) --- */}
+        <View style={styles.mapSideControls} pointerEvents="box-none">
+          <View style={styles.controlsPill}>
+            <TouchableOpacity style={styles.controlBtn} onPress={handleReorientNorth}>
+              <Compass size={22} color="white" />
+            </TouchableOpacity>
+            
+            <View style={styles.controlDivider} />
+            
+            <TouchableOpacity style={styles.controlBtn} onPress={handleRelocate}>
+              <LocateFixed size={22} color="white" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Header Controls */}
         <View style={styles.floatingHeader} pointerEvents="box-none">
           <TouchableOpacity style={styles.floatingBtn} onPress={onClose}>
             <ArrowLeft size={24} color="white" />
@@ -323,6 +360,7 @@ export const JobsMapModal = ({ visible, onClose }: JobsMapModalProps) => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'black' },
   map: { width: '100%', height: '100%' },
+  
   floatingHeader: { position: 'absolute', top: 0, width: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 60 : 40, zIndex: 10 },
   floatingBtn: { backgroundColor: '#18181b', padding: 12, borderRadius: 25, borderWidth: 1, borderColor: '#3f3f46', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5, elevation: 5 },
   floatingBtnActive: { borderColor: Colors.primary || '#8b5cf6', backgroundColor: '#27272a' },
@@ -332,4 +370,9 @@ const styles = StyleSheet.create({
   markerBadge: { backgroundColor: '#8b5cf6', padding: 8, borderRadius: 20, borderWidth: 2, borderColor: 'white' },
   markerBadgeSelected: { backgroundColor: '#4ade80', transform: [{ scale: 1.2 }], borderColor: 'white', zIndex: 10 },
   clusterBadge: { backgroundColor: Colors.primary || '#8b5cf6', width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: 'white', shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 5 },
+
+  mapSideControls: { position: 'absolute', right: 20, top: '40%', zIndex: 5 },
+  controlsPill: { backgroundColor: '#18181b', borderRadius: 16, borderWidth: 1, borderColor: '#3f3f46', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5, elevation: 5, overflow: 'hidden' },
+  controlBtn: { padding: 14, alignItems: 'center', justifyContent: 'center' },
+  controlDivider: { height: 1, backgroundColor: '#3f3f46', width: '100%' },
 });
