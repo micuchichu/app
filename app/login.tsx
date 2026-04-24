@@ -17,7 +17,7 @@ export default function LoginScreen() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) showAlert('Error', error.message);
-    else router.replace('/(tabs)/profile');
+    else router.replace('/(tabs)/explore');
     setLoading(false);
   }
 
@@ -40,7 +40,7 @@ export default function LoginScreen() {
       if (profileError) {
         console.error("Guest profile creation error:", profileError);
       }
-      router.replace('/(tabs)/feed');
+      router.replace('/(tabs)/explore');
     }
     setLoading(false);
   }

@@ -23,7 +23,7 @@ export default function AuthCallback() {
         if (error) console.error('Session error:', error.message);
       }
 
-      router.replace('/(tabs)/profile');
+      router.replace('/(tabs)/explore');
     };
 
     Linking.getInitialURL().then((url) => {

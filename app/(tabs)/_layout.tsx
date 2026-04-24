@@ -3,7 +3,6 @@ import { StyleSheet, Platform } from 'react-native';
 import { withLayoutContext } from 'expo-router';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { Home, Search, PlusSquare, User, Table } from 'lucide-react-native';
-import PostScreen from './post/post';
 
 const MaterialTopTabs = createMaterialTopTabNavigator();
 const SwipeableTabs = withLayoutContext(MaterialTopTabs.Navigator);
@@ -11,6 +10,7 @@ const SwipeableTabs = withLayoutContext(MaterialTopTabs.Navigator);
 export default function TabLayout() {
   return (
     <SwipeableTabs
+      initialRouteName="explore"
       tabBarPosition="bottom"
       
       screenOptions={{
@@ -27,10 +27,10 @@ export default function TabLayout() {
       }}
     >
       <SwipeableTabs.Screen
-        name="post/post" 
+        name="post" 
         options={{ 
           title: 'Post', 
-          tabBarIcon: ({ color }: { color: string }) => <PlusSquare size={24} color={color} /> 
+          tabBarIcon: ({ color }: { color: string }) => <PlusSquare size={24} color={color} />
         }} 
       />
 
@@ -46,7 +46,7 @@ export default function TabLayout() {
         name="explore" 
         options={{ 
           title: 'Explore', 
-          tabBarIcon: ({ color }: { color: string }) => <Search size={24} color={color} /> 
+          tabBarIcon: ({ color }: { color: string }) => <Search size={24} color={color} />
         }} 
       />
     

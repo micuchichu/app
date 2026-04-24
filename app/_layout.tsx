@@ -34,7 +34,7 @@ export default function RootLayout() {
     if (!session && inTabsGroup) {
       router.replace('/login');
     } else if (session && !inTabsGroup) {
-      router.replace('/(tabs)/profile');
+      router.replace('/(tabs)/explore');
     }
   }, [session, segments, isInitialized]);
 
