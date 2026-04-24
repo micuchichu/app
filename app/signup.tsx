@@ -1,16 +1,20 @@
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Image, Animated, SafeAreaView } from 'react-native';
-import React, { useState, useEffect, useRef } from 'react';
 import { router } from 'expo-router';
-import { ArrowLeft, ArrowRight, Check, MapIcon, CalendarIcon, ChevronDown } from 'lucide-react-native';
-import { isValidPhoneNumber, AsYouType } from 'libphonenumber-js';
+import { AsYouType, isValidPhoneNumber } from 'libphonenumber-js';
+import { ArrowLeft, ArrowRight, CalendarIcon, Check, ChevronDown, MapIcon } from 'lucide-react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Animated, Image, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { supabase } from './lib/supabase';
 
-import { useLocationManager } from './hooks/locationManager';
-import { useSignupData, CountryRecord } from './hooks/signupData';
-import { MapPickerModal } from './components/mapPickerModal';
 import { CountryPickerModal } from './components/countryPickerModal';
 import { DatePickerModal } from './components/datePickerModal';
+import { MapPickerModal } from './components/mapPickerModal';
+import { useLocationManager } from './hooks/locationManager';
+import { CountryRecord, useSignupData } from './hooks/signupData';
+
+import * as Linking from 'expo-linking';
+
+const redirectTo = Linking.createURL('/auth/callback');
 
 const TOTAL_STEPS = 3;
 
@@ -137,9 +141,12 @@ export default function SignupScreen() {
     try {
       const formattedPhoneNumber = `${selectedCountry?.phone_prefix || ''} ${phoneNumber.trim()}`;
 
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email, 
+     const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
         password,
+        options: {
+          emailRedirectTo: redirectTo,
+        },
       });
 
       if (authError) throw authError;
