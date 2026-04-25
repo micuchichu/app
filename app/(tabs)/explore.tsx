@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, Platform, FlatList, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, Platform, FlatList, ActivityIndicator, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search, Map, Filter, MapPin, Briefcase, ChevronRight, User } from 'lucide-react-native';
 
@@ -32,6 +32,8 @@ export default function ExploreScreen() {
 
   const categories = ['All', 'Microjob', 'Part-time', 'Full-time', 'On-site', 'Online', 'Hybrid'];
 
+  const fallbackImage = require('@/assets/nomedia.png');
+
   useEffect(() => {
     const fetchUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -50,10 +52,11 @@ export default function ExploreScreen() {
       let jobQuery = supabase
         .from('job_postings')
         .select(`
-          employer_id, title, description, pay_amount, currency_id, schedule_type, work_mode, is_negotiable, active, created_at,
+          employer_id, title, description, pay_amount, schedule_type, work_mode, is_negotiable, active, created_at,
           thumbnail_url, video_url,
           locations!job_location_id(city_name),
           employers ( rating, verified, profiles ( full_name ) )
+          currencies ( currency_text )
         `)
         .eq('active', true)
         .order('created_at', { ascending: false });
@@ -122,27 +125,27 @@ export default function ExploreScreen() {
   };
 
   const renderJobCard = ({ item }: { item: any }) => {
-    const cityName = item.locations?.city_name || 'Remote';
     const employerName = item.employers?.profiles?.full_name || 'Anonymous';
+    
+    const imageSource = item.thumbnail_url ? { uri: item.thumbnail_url } : fallbackImage;
 
     return (
-      <TouchableOpacity style={styles.jobListCard} onPress={() => setPreviewJob(item as unknown as Job)}>
-        <View style={styles.jobListHeader}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.jobListTitle} numberOfLines={1}>{item.title}</Text>
-            <Text style={styles.jobListEmployer}>@{employerName.replace(/\s+/g, '').toLowerCase()}</Text>
+      <TouchableOpacity style={styles.gridCard} onPress={() => setPreviewJob(item as unknown as Job)}>
+        <Image source={imageSource} style={styles.gridCardImage} />
+        
+        <View style={styles.gridCardOverlay} />
+
+        <View style={styles.gridCardContent}>
+          <View style={styles.gridCardTop}>
+             <View style={styles.payBadgeSmall}>
+               <Text style={styles.payBadgeTextSmall}>${item.pay_amount}</Text>
+             </View>
           </View>
-          <View style={styles.payBadge}>
-            <Text style={styles.payBadgeText}>${item.pay_amount}</Text>
+          
+          <View style={styles.gridCardBottom}>
+            <Text style={styles.gridCardTitle} numberOfLines={2}>{item.title}</Text>
+            <Text style={styles.gridCardEmployer} numberOfLines={1}>@{employerName.replace(/\s+/g, '').toLowerCase()}</Text>
           </View>
-        </View>
-        <Text style={styles.jobListDesc} numberOfLines={2}>{item.description}</Text>
-        <View style={styles.jobListFooter}>
-          <View style={styles.tagRow}>
-            <View style={styles.smallTag}><Briefcase size={12} color={Colors.textMuted} /><Text style={styles.smallTagText}>{item.schedule_type}</Text></View>
-            <View style={styles.smallTag}><MapPin size={12} color={Colors.textMuted} /><Text style={styles.smallTagText}>{cityName}</Text></View>
-          </View>
-          <Text style={styles.timeAgo}>Active</Text>
         </View>
       </TouchableOpacity>
     );
@@ -226,9 +229,13 @@ export default function ExploreScreen() {
       <View style={styles.container}>
         <FlatList
           data={jobs}
+          key={'grid-2-cols'} 
+          
           keyExtractor={(item, index) => item?.id ? item.id.toString() : index.toString()}
           renderItem={renderJobCard}
           ListHeaderComponent={listHeader}
+          numColumns={2}
+          columnWrapperStyle={styles.row}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100 }}
           ListEmptyComponent={
@@ -299,25 +306,27 @@ const styles = StyleSheet.create({
 
   sectionTitle: { color: 'white', fontSize: 20, fontWeight: 'bold', marginBottom: 15 },
 
-  // --- NEW: Profile Search Card Styles ---
   profileSearchCard: { backgroundColor: '#18181b', width: 120, padding: 15, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: '#27272a' },
   profileSearchAvatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#3f3f46', justifyContent: 'center', alignItems: 'center', marginBottom: 10, borderWidth: 1, borderColor: Colors.primary },
   profileSearchName: { color: 'white', fontSize: 14, fontWeight: 'bold', textAlign: 'center', marginBottom: 2 },
   profileSearchJob: { color: '#a1a1aa', fontSize: 11, textAlign: 'center' },
 
-  jobListCard: { backgroundColor: Colors.surface || '#18181b', borderRadius: 16, padding: 16, marginBottom: 15, borderWidth: 1, borderColor: Colors.surfaceHighlight || '#27272a' },
-  jobListHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
-  jobListTitle: { color: 'white', fontSize: 18, fontWeight: 'bold' },
-  jobListEmployer: { color: Colors.primary || '#8b5cf6', fontSize: 13, marginTop: 2, fontWeight: '600' },
-  payBadge: { backgroundColor: 'rgba(74, 222, 128, 0.15)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
-  payBadgeText: { color: '#4ade80', fontWeight: 'bold', fontSize: 14 },
-  jobListDesc: { color: Colors.textMuted || '#a1a1aa', fontSize: 14, lineHeight: 20, marginBottom: 12 },
-  jobListFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderColor: Colors.surfaceHighlight || '#27272a', paddingTop: 12 },
-  tagRow: { flexDirection: 'row', gap: 8 },
-  smallTag: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: Colors.surfaceHighlight || '#27272a', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  smallTagText: { color: Colors.textMuted || '#a1a1aa', fontSize: 12, textTransform: 'capitalize' },
-  timeAgo: { color: Colors.textSubtle || '#71717a', fontSize: 12 },
+  row: { justifyContent: 'space-between', marginBottom: 15, },
 
+  gridCard: { width: '48%', aspectRatio: 0.75, borderRadius: 12, backgroundColor: '#18181b', overflow: 'hidden', borderWidth: 1, borderColor: '#27272a' },
+  gridCardImage: { width: '100%', height: '100%', position: 'absolute', resizeMode: 'cover', },
+  gridCardOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.35)', },
+  gridCardContent: { flex: 1, justifyContent: 'space-between', padding: 10, },
+  gridCardTop: { flexDirection: 'row', justifyContent: 'flex-start', },
+
+  gridCardBottom: { justifyContent: 'flex-end', },
+  gridCardTitle: { color: 'white', fontSize: 14, fontWeight: 'bold', marginBottom: 4, textShadowColor: 'rgba(0,0,0,0.9)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4, },
+  gridCardEmployer: { color: '#d4d4d8', fontSize: 12, fontWeight: '500', textShadowColor: 'rgba(0,0,0,0.9)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4, },
+
+
+  payBadgeSmall: { backgroundColor: 'rgba(74, 222, 128, 0.9)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, },
+  payBadgeTextSmall: { color: 'black', fontWeight: 'bold', fontSize: 12,},
+ 
   emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 50 },
   emptyStateText: { color: Colors.textMuted, fontSize: 16, marginTop: 15 }
 });

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
-import { Bookmark, Briefcase, DollarSign, MapPin, Share2, User } from 'lucide-react-native';
+// REMOVED DollarSign from imports
+import { Bookmark, Briefcase, MapPin, Share2, User } from 'lucide-react-native';
 
 import { useVideoPlayer, VideoView } from 'expo-video';
 
@@ -19,7 +20,7 @@ export interface Job {
   description: string;
   schedule_type: string;
   pay_amount: number;
-  pay_currency: string;
+  currencies?: { currency_text: string } | null; 
   is_negotiable: boolean;
   thumbnail_url: string | null;
   video_url?: string | null; 
@@ -98,7 +99,10 @@ export default function JobCard({ item, onApply, userId, isActive }: { item: Job
   const isVerified = item.employers?.verified || false;
   
   const cityName = item.locations?.city_name || 'Remote';
-  const formattedPay = `${item.is_negotiable ? 'Max ' : ''}${item.pay_amount} ${item.pay_currency}`;
+  
+  const currencyCode = item.currencies?.currency_text || '';
+  const formattedPay = `${item.is_negotiable ? 'Max ' : ''}${item.pay_amount} ${currencyCode}`;
+  
   const fallbackImage = "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80";
 
   return (
@@ -124,7 +128,7 @@ export default function JobCard({ item, onApply, userId, isActive }: { item: Job
           </View>
           
           <View style={styles.payRow}>
-            <DollarSign size={18} color="#4ade80" />
+            {/* REMOVED: <DollarSign size={18} color="#4ade80" /> */}
             <Text style={styles.payText}>{formattedPay}</Text>
           </View>
         </View>

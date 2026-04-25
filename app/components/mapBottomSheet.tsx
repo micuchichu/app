@@ -19,7 +19,7 @@ interface MapBottomSheetProps {
 }
 
 export default function MapBottomSheet({ panY, panHandlers, selectedJob, selectedCluster, isExpanded, jobsCount, microjobCount, partTimeCount, onCloseJob, onSelectJob }: MapBottomSheetProps) {
-  const fallbackImage = "https://placehold.co/800x600/18181b/52525b.png?text=Media+Unavailable";
+  const fallbackImage = require('@/assets/nomedia.png');
 
   return (
     <Animated.View style={[styles.bottomSheet, { transform: [{ translateY: panY }] }]}>
@@ -41,7 +41,6 @@ export default function MapBottomSheet({ panY, panHandlers, selectedJob, selecte
               </TouchableOpacity>
             </View>
             
-            {/* HORIZONTAL SCROLL VIEW */}
             <ScrollView 
               horizontal 
               showsHorizontalScrollIndicator={false} 
@@ -102,7 +101,7 @@ export default function MapBottomSheet({ panY, panHandlers, selectedJob, selecte
               <View style={{ flex: 1 }}>
                 <Text style={styles.jobDescription} numberOfLines={3}>{selectedJob.description}</Text>
                 <View style={styles.mediaContainer}>
-                  <Image source={{ uri: selectedJob.thumbnail_url || fallbackImage }} style={styles.mediaPreview} />
+                  <Image source={selectedJob.thumbnail_url ? { uri: selectedJob.thumbnail_url } : fallbackImage} style={styles.mediaPreview} />
                 </View>
                 <TouchableOpacity style={styles.applyBtn}>
                   <Text style={styles.applyBtnText}>{selectedJob.is_negotiable ? 'Place a Bid' : 'Apply Now'}</Text>

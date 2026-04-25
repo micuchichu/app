@@ -2,7 +2,6 @@ import { useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 
 import { supabase } from '../lib/supabase';
-import { getDefaultCurrency } from './utils';
 import { uploadMediaToSupabase } from '../lib/mediaUpload';
 import { useAlert } from '@/app/components/alertContext';
 
@@ -20,18 +19,35 @@ export const useJobSubmit = (locManager: any) => {
     const [uploadStatus, setUploadStatus] = useState('');
     const { showAlert } = useAlert();
 
-    const handlePostJob = async (selectedCurrency: string) => {
+    const handlePostJob = async (selectedCurrencyCode: string) => {
         if (!title || !payAmount || !description || (!locManager.selectedLocId && !locManager.gpsData)) {
             showAlert("Missing Info", "Please fill out all required fields and set a location.");
             return;
         }
 
         setIsSubmitting(true);
-        setUploadStatus('Saving location...');
 
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) { showAlert("Error", "You must be logged in."); setIsSubmitting(false); return; }
 
+        setUploadStatus('Verifying currency...');
+        
+        const { data: currencyData, error: currencyError } = await supabase
+            .from('currencies')
+            .select('currency_id') 
+            .ilike('currency_text', selectedCurrencyCode.trim()) 
+            .limit(1)
+            .maybeSingle(); 
+
+        if (currencyError || !currencyData) {
+            showAlert("Currency Error", `Database Error: ${currencyError?.message || 'Currency not found'}`);
+            setIsSubmitting(false);
+            return;
+        }
+        
+        const finalCurrencyId = currencyData.currency_id;
+
+        setUploadStatus('Saving location...');
         let finalLocationId = locManager.selectedLocId;
 
         if (locManager.gpsData) {
@@ -78,7 +94,6 @@ export const useJobSubmit = (locManager: any) => {
         }
 
         setUploadStatus('Posting job...');
-
         const { data: existingEmployer, error: employerFetchError } = await supabase
             .from('employers')
             .select('id')
@@ -91,21 +106,16 @@ export const useJobSubmit = (locManager: any) => {
             return;
         }
 
-        let finalEmployerId = existingEmployer?.id;
-
         if (!existingEmployer) {
-            const { data: newEmployer, error: insertError } = await supabase
+            const { error: insertError } = await supabase
                 .from('employers')
-                .insert([{ id: user.id, rating: 0, verified: false, active_user: true, job_postings_made: 1 }])
-                .select('id')
-                .single();
+                .insert([{ id: user.id, rating: 0, verified: false, active_user: true, job_postings_made: 1 }]);
 
             if (insertError) {
                 showAlert("Employer Creation Error", insertError.message);
                 setIsSubmitting(false);
                 return;
             }
-            finalEmployerId = newEmployer.id;
         }
 
         const cleanPay = parseFloat(payAmount.replace(/[^0-9.]/g, ''));
@@ -117,7 +127,7 @@ export const useJobSubmit = (locManager: any) => {
             schedule_type: scheduleType.toLowerCase(), 
             pay_amount: isNaN(cleanPay) ? 0 : cleanPay,
             
-            currency_id: selectedCurrency, 
+            currency_id: finalCurrencyId,
             
             is_negotiable: isNegotiable, 
             people_needed: parseInt(peopleNeeded) || 1, 

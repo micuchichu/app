@@ -37,6 +37,7 @@ export default function FeedScreen() {
       .select(`
         *,
         id:job_id,
+        currencies ( currency_text ),
         employers ( 
           rating, 
           verified,

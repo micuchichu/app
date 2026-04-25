@@ -44,9 +44,7 @@ export const JobsMapModal = ({ visible, onClose }: JobsMapModalProps) => {
   const isExpandedRef = useRef(false); 
   const panY = useRef(new Animated.Value(HIDDEN_Y)).current;
 
-  // --- NEW: Map Control Functions ---
   const handleReorientNorth = () => {
-    // Animates the camera rotation back to 0 (North) and resets tilt (pitch)
     mapRef.current?.animateCamera({ heading: 0, pitch: 0 }, { duration: 400 });
   };
 
@@ -62,7 +60,6 @@ export const JobsMapModal = ({ visible, onClose }: JobsMapModalProps) => {
       };
       setMapRegion(newRegion);
       setZoomDelta(0.1);
-      // Smoothly fly the camera back to the user
       mapRef.current?.animateToRegion(newRegion, 500);
     }
   };
@@ -302,7 +299,6 @@ export const JobsMapModal = ({ visible, onClose }: JobsMapModalProps) => {
           })}
         </MapView>
 
-        {/* --- NEW: Map Action Buttons (Right Sidebar) --- */}
         <View style={styles.mapSideControls} pointerEvents="box-none">
           <View style={styles.controlsPill}>
             <TouchableOpacity style={styles.controlBtn} onPress={handleReorientNorth}>
@@ -317,7 +313,6 @@ export const JobsMapModal = ({ visible, onClose }: JobsMapModalProps) => {
           </View>
         </View>
 
-        {/* Header Controls */}
         <View style={styles.floatingHeader} pointerEvents="box-none">
           <TouchableOpacity style={styles.floatingBtn} onPress={onClose}>
             <ArrowLeft size={24} color="white" />
