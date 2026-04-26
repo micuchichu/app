@@ -7,7 +7,7 @@ import { AlertProvider } from './components/alertContext';
 
 export default function RootLayout() {
   const [session, setSession] = useState<Session | null>(null);
-  const [isInitialized, setIsInitialized] = useState(false); // <-- NEW STATE
+  const [isInitialized, setIsInitialized] = useState(false);
   const router = useRouter();
   const segments = useSegments();
 

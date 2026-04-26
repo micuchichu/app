@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, Platform, FlatList, ActivityIndicator, Image } from 'react-native';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, Platform, FlatList, ActivityIndicator, Image, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Search, Map, Filter, MapPin, Briefcase, ChevronRight, User } from 'lucide-react-native';
+// Added 'X' to the lucide imports for the close button
+import { Search, Map, Filter, MapPin, Briefcase, ChevronRight, User, X } from 'lucide-react-native';
 
 import { supabase } from '@/app/lib/supabase';
 import { Colors } from '@/app/constants/colors';
 import { FilterState, JobFilterModal } from '@/app/components/jobFilterModal';
 import { JobsMapModal } from '@/app/components/jobsMapModal';
-import { JobPreviewModal } from '@/app/components/jobPreviewModal';
-import { Job } from '@/app/components/jobCard';
+
 import { ProfileModal } from '@/app/components/profileModal';
+// IMPORT your new component! Make sure the path matches where you saved it.
+import { ScrollableJobs } from '@/app/components/scrollableJobs'; 
 
 export default function ExploreScreen() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -21,7 +23,9 @@ export default function ExploreScreen() {
   const [activeFilters, setActiveFilters] = useState<FilterState | undefined>(undefined);
 
   const [userId, setUserId] = useState<string | null>(null);
-  const [previewJob, setPreviewJob] = useState<Job | null>(null);
+  
+  // --- NEW: State to track which job ID to start the swipe feed on ---
+  const [feedStartId, setFeedStartId] = useState<string | null>(null);
 
   const [jobs, setJobs] = useState<any[]>([]);
 
@@ -52,11 +56,12 @@ export default function ExploreScreen() {
       let jobQuery = supabase
         .from('job_postings')
         .select(`
-          employer_id, title, description, pay_amount, schedule_type, work_mode, is_negotiable, active, created_at,
-          thumbnail_url, video_url,
-          locations!job_location_id(city_name),
-          employers ( rating, verified, profiles ( full_name ) )
-          currencies ( currency_text )
+          *,
+          id:job_id,
+          currencies ( currency_text ),
+          employers ( rating, verified, profiles ( full_name ) ),
+          locations!job_location_id ( city_name ),
+          job_postings_candidates ( employee_id )
         `)
         .eq('active', true)
         .order('created_at', { ascending: false });
@@ -130,7 +135,8 @@ export default function ExploreScreen() {
     const imageSource = item.thumbnail_url ? { uri: item.thumbnail_url } : fallbackImage;
 
     return (
-      <TouchableOpacity style={styles.gridCard} onPress={() => setPreviewJob(item as unknown as Job)}>
+      // --- FIXED: Opens the Feed starting at this job's ID ---
+      <TouchableOpacity style={styles.gridCard} onPress={() => setFeedStartId(item.id)}>
         <Image source={imageSource} style={styles.gridCardImage} />
         
         <View style={styles.gridCardOverlay} />
@@ -138,7 +144,8 @@ export default function ExploreScreen() {
         <View style={styles.gridCardContent}>
           <View style={styles.gridCardTop}>
              <View style={styles.payBadgeSmall}>
-               <Text style={styles.payBadgeTextSmall}>${item.pay_amount}</Text>
+               {/* Extracted the currency formatting correctly */}
+               <Text style={styles.payBadgeTextSmall}>{item.pay_amount} {item.currencies?.currency_text || ''}</Text>
              </View>
           </View>
           
@@ -230,7 +237,6 @@ export default function ExploreScreen() {
         <FlatList
           data={jobs}
           key={'grid-2-cols'} 
-          
           keyExtractor={(item, index) => item?.id ? item.id.toString() : index.toString()}
           renderItem={renderJobCard}
           ListHeaderComponent={listHeader}
@@ -267,13 +273,29 @@ export default function ExploreScreen() {
           }}
         />
 
-        <JobPreviewModal job={previewJob} onClose={() => setPreviewJob(null)} userId={userId} />
         <ProfileModal 
           visible={!!selectedProfile}
           onClose={() => setSelectedProfile(null)}
           userId={selectedProfile?.id}
           fallbackName={selectedProfile?.full_name} 
         />
+
+        {/* --- NEW: Full Screen Swipe Feed Modal --- */}
+        <Modal visible={!!feedStartId} animationType="slide" onRequestClose={() => setFeedStartId(null)}>
+          <View style={{ flex: 1, backgroundColor: 'black' }}>
+            {/* Floating Close Button */}
+            <TouchableOpacity style={styles.closeSwipeFeedBtn} onPress={() => setFeedStartId(null)}>
+              <X size={24} color="white" />
+            </TouchableOpacity>
+
+            <ScrollableJobs 
+              jobs={jobs as any} 
+              userId={userId} 
+              initialJobId={feedStartId || undefined} 
+              onRefresh={fetchJobsAndProfiles} 
+            />
+          </View>
+        </Modal>
 
       </View>
     </SafeAreaView>
@@ -323,10 +345,11 @@ const styles = StyleSheet.create({
   gridCardTitle: { color: 'white', fontSize: 14, fontWeight: 'bold', marginBottom: 4, textShadowColor: 'rgba(0,0,0,0.9)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4, },
   gridCardEmployer: { color: '#d4d4d8', fontSize: 12, fontWeight: '500', textShadowColor: 'rgba(0,0,0,0.9)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4, },
 
-
   payBadgeSmall: { backgroundColor: 'rgba(74, 222, 128, 0.9)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, },
   payBadgeTextSmall: { color: 'black', fontWeight: 'bold', fontSize: 12,},
  
   emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 50 },
-  emptyStateText: { color: Colors.textMuted, fontSize: 16, marginTop: 15 }
+  emptyStateText: { color: Colors.textMuted, fontSize: 16, marginTop: 15 },
+  
+  closeSwipeFeedBtn: { position: 'absolute', top: Platform.OS === 'ios' ? 60 : 40, left: 20, zIndex: 100, backgroundColor: 'rgba(24, 24, 27, 0.8)', padding: 10, borderRadius: 25, borderWidth: 1, borderColor: '#3f3f46' },
 });

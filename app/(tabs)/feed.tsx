@@ -1,31 +1,21 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { Dimensions, StyleSheet, View } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import React, { useEffect, useState } from 'react';
+import { View } from 'react-native';
 
 import { supabase } from '@/app/lib/supabase';
-import { trackEvent } from '@/app/lib/ranking'; 
 import { GlobalStyles } from '@/app/constants/globalStyles';
-
-import JobCard, { Job } from '@/app/components/jobCard';
-import { BiddingModal } from '@/app/components/biddingModal'; 
+import { Job } from '@/app/components/jobCard';
 import { useAlert } from '@/app/components/alertContext';
-
-const { height } = Dimensions.get('window');
+import { ScrollableJobs } from '@/app/components/scrollableJobs'; // <-- Import the new component
 
 export default function FeedScreen() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   
-  const [biddingJob, setBiddingJob] = useState<Job | null>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
   const { showAlert } = useAlert();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setUserId(user?.id ?? null));
-  }, []);
-
-  useEffect(() => {
     fetchJobs();
   }, []);
 
@@ -38,12 +28,9 @@ export default function FeedScreen() {
         *,
         id:job_id,
         currencies ( currency_text ),
-        employers ( 
-          rating, 
-          verified,
-          profiles ( full_name ) 
-        ),
-        locations!job_location_id ( city_name )
+        employers ( rating, verified, profiles ( full_name ) ),
+        locations!job_location_id ( city_name ),
+        job_postings_candidates ( employee_id ) 
       `)
       .eq('active', true)
       .order('created_at', { ascending: false });
@@ -58,52 +45,13 @@ export default function FeedScreen() {
     setIsLoading(false);
   };
 
-  const handleApply = async (job: Job) => {
-    if (job.is_negotiable) {
-      setBiddingJob(job);
-    } else {
-      if (userId) await trackEvent(userId, job.id, 'apply');
-      showAlert('Applied!', `Your application to ${job.employers?.profiles?.full_name || 'the employer'} has been sent.`);
-    }
-  };
-
-  const handleViewableChange = useCallback(({ viewableItems }: any) => {
-    if (viewableItems.length > 0) {
-      setActiveIndex(viewableItems[0].index);
-    }
-    if (!userId) return;
-    viewableItems.forEach((vi: any) => trackEvent(userId, vi.item.id, 'view'));
-  }, [userId]);
-
   return (
     <View style={GlobalStyles.safeScreen}>
-      <FlashList
-        data={jobs}
-        renderItem={({ item, index }) => (
-          <JobCard 
-            item={item} 
-            onApply={() => handleApply(item)} 
-            userId={userId} 
-            isActive={index === activeIndex} 
-          />
-        )}
-        keyExtractor={item => item.id.toString()}
-        snapToInterval={height} 
-        snapToAlignment="start"
-        decelerationRate="fast"
-        disableIntervalMomentum={true}
-        showsVerticalScrollIndicator={false}
-        refreshing={isLoading}
-        onRefresh={fetchJobs}
-        onViewableItemsChanged={handleViewableChange}
-        viewabilityConfig={{ itemVisiblePercentThreshold: 80 }}
-      />
-
-      <BiddingModal 
-        visible={!!biddingJob}
-        job={biddingJob}
-        userId={userId}
-        onClose={() => setBiddingJob(null)}
+      <ScrollableJobs 
+        jobs={jobs} 
+        userId={userId} 
+        isLoading={isLoading} 
+        onRefresh={fetchJobs} 
       />
     </View>
   );

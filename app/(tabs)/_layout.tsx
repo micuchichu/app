@@ -71,17 +71,6 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  navBar: { 
-    backgroundColor: '#09090b', 
-    borderTopWidth: 0.5, 
-    borderTopColor: '#27272a',
-    paddingBottom: Platform.OS === 'ios' ? 20 : 10,
-    paddingTop: 10,
-    height: Platform.OS === 'ios' ? 90 : 120,
-  },
-  navText: {
-    fontSize: 10,
-    textTransform: 'none',
-    marginTop: 4,
-  }
+  navBar: { backgroundColor: '#09090b', borderTopWidth: 0.5, borderTopColor: '#27272a', paddingBottom: Platform.OS === 'ios' ? 20 : 10, paddingTop: 10, height: Platform.OS === 'ios' ? 90 : 120, },
+  navText: { fontSize: 10, textTransform: 'none', marginTop: 4, }
 });

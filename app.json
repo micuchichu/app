@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "app",
-    "slug": "app",
+    "slug": "workly",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -43,7 +43,6 @@
       "@react-native-community/datetimepicker",
       "expo-video"
     ],
-
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
@@ -51,8 +50,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "49c6c7e8-7dfe-473d-b513-30579fee6450"      
+        "projectId": "6b2b48e4-ac6b-4f95-a3cd-5cd693e3632a"
       }
-    }
+    },
+    "owner": "masterminds"
   }
 }

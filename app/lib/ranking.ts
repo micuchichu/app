@@ -83,9 +83,9 @@ function scoreJob(job: Job, prefs: UserPreferences | null, events: JobEvent[]): 
   const applied = events.some(e => e.job_id === job.id && e.event_type === 'apply');
   const bid = events.some(e => e.job_id === job.id && e.event_type === 'bid');
 
-  if (hidden) score -= 80;    // push hidden jobs to bottom
-  if (saved) score += 25;     // user showed interest
-  if (applied || bid) score -= 100; // already acted, don't show again
+  if (hidden) score -= 80;
+  if (saved) score += 25;
+  if (applied || bid) score -= 100;
 
   return score;
 }

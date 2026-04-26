@@ -103,7 +103,7 @@ export default function JobCard({ item, onApply, userId, isActive }: { item: Job
   const currencyCode = item.currencies?.currency_text || '';
   const formattedPay = `${item.is_negotiable ? 'Max ' : ''}${item.pay_amount} ${currencyCode}`;
   
-  const fallbackImage = "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80";
+  const fallbackImage = require('@/assets/nomedia.png');
 
   return (
     <View style={styles.jobCard}>
@@ -128,7 +128,6 @@ export default function JobCard({ item, onApply, userId, isActive }: { item: Job
           </View>
           
           <View style={styles.payRow}>
-            {/* REMOVED: <DollarSign size={18} color="#4ade80" /> */}
             <Text style={styles.payText}>{formattedPay}</Text>
           </View>
         </View>
