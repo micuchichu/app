@@ -22,8 +22,8 @@ export default function MapBottomSheet({ panY, panHandlers, selectedJob, selecte
   const fallbackImage = require('@/assets/nomedia.png');
 
   return (
-    <Animated.View style={[styles.bottomSheet, { transform: [{ translateY: panY }] }]}>
-      <View style={styles.massiveDragZone} {...panHandlers}>
+    <Animated.View style={[styles.bottomSheet, { transform: [{ translateY: panY }] }]} {...panHandlers}>
+      <View style={styles.massiveDragZone}>
         <View style={styles.dragHandle} />
       </View>
 

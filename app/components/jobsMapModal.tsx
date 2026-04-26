@@ -211,9 +211,8 @@ export const JobsMapModal = ({ visible, onClose }: JobsMapModalProps) => {
              if (hasSelection) {
                setSelectedJob(null); 
                setSelectedCluster(null);
-             } else {
-               Animated.spring(panY, { toValue: HIDDEN_Y, useNativeDriver: true }).start();
              }
+             Animated.spring(panY, { toValue: SMALL_Y, useNativeDriver: true, bounciness: 6 }).start();
           }
         } else {
            Animated.spring(panY, { toValue: isExpandedRef.current ? EXPANDED_Y : targetSmallY, useNativeDriver: true, bounciness: 6 }).start();
