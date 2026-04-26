@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "app",
+    "name": "Workly",
     "slug": "workly",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -50,7 +50,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "6b2b48e4-ac6b-4f95-a3cd-5cd693e3632a"
+        "projectId": "6b2b48e4-ac6b-4f95-a3cd-5cd693e3632a"      
       }
     },
     "owner": "masterminds"
