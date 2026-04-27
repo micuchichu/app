@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
-// REMOVED DollarSign from imports
 import { Bookmark, Briefcase, MapPin, Share2, User } from 'lucide-react-native';
 
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -165,7 +164,7 @@ export default function JobCard({ item, onApply, userId, isActive }: { item: Job
 }
 
 const styles = StyleSheet.create({
-  jobCard: { height: height - 20, width: width, marginBottom: 20 }, 
+  jobCard: { height: height - 60, width: width, marginBottom: 20, marginTop: 40 }, 
   bgImage: { ...StyleSheet.absoluteFillObject },
   darkOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.5)' },
   contentOverlay: { flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', paddingBottom: 110, paddingHorizontal: 15 },

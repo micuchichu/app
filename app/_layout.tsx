@@ -5,6 +5,10 @@ import { ActivityIndicator, View } from 'react-native';
 import { supabase } from './lib/supabase';
 import { AlertProvider } from './components/alertContext';
 
+export const unstable_settings = {
+  initialRouteName: 'login',
+};
+
 export default function RootLayout() {
   const [session, setSession] = useState<Session | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -49,7 +53,7 @@ export default function RootLayout() {
   return (
     <AlertProvider>
       <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="./(tabs)/explore" />
         <Stack.Screen name="login" options={{ presentation: 'modal' }} />
       </Stack>
     </AlertProvider>

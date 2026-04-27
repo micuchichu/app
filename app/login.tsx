@@ -27,14 +27,13 @@ export default function LoginScreen() {
     if (error) {
       showAlert('Error', error.message);
     } else if (data.user) {
-      // Create a default profile for the guest user to prevent joining errors
       const { error: profileError } = await supabase
         .from('profiles')
         .upsert([{
           id: data.user.id,
           full_name: 'Guest User',
           email: `guest_${data.user.id.substring(0, 8)}@anonymous.local`,
-          age: 18, // Default age
+          age: 18,
         }], { onConflict: 'id' });
 
       if (profileError) {
