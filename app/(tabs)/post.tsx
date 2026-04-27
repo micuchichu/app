@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { 
   StyleSheet, Text, View, TouchableOpacity, 
   ScrollView, Dimensions, Platform, KeyboardAvoidingView, ActivityIndicator,
-  TextInput, Modal
+  TextInput
 } from 'react-native';
 import { Lock, ChevronDown, Map as MapIcon, MapPinnedIcon, MapPin, InfoIcon, Search } from 'lucide-react-native';
 import * as Location from 'expo-location';
@@ -16,6 +16,7 @@ import { LocationDropdownModal } from '@/app/components/locationDropdownModal';
 import InfoModal from '@/app/components/infoModal';
 import { MediaPickerBox } from '@/app/components/mediaPickerBox';
 import { getDefaultCurrency, Currency } from '@/app/hooks/utils';
+import { CurrencyDropdownModal } from '@/app/components/currencyDropdownModal';
 
 const screenWidth = Dimensions.get('window').width;
 const contentWidth = screenWidth - 40;
@@ -25,16 +26,13 @@ export default function PostScreen() {
   const [loadingAuth, setLoadingAuth] = useState(true);
 
   const locManager = useLocationManager();
-  
+
   const {
       title, setTitle, description, setDescription, scheduleType, setScheduleType,
-      payAmount, setPayAmount, isNegotiable, setIsNegotiable, media, setMedia,
-      isSubmitting, uploadStatus, handlePostJob
+      workMode, setWorkMode, peopleNeeded, setPeopleNeeded, payAmount, setPayAmount,
+      isNegotiable, setIsNegotiable, media, setMedia, isSubmitting, uploadStatus, handlePostJob
   } = useJobSubmit(locManager);
 
-  const [workMode, setWorkMode] = useState('On-site');
-  const [peopleNeeded, setPeopleNeeded] = useState('1');
-  
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [mapRegion, setMapRegion] = useState({ latitude: 37.78825, longitude: -122.4324, latitudeDelta: 0.0922, longitudeDelta: 0.0421 });
@@ -287,54 +285,12 @@ export default function PostScreen() {
                   description={infoModalData.description}
               />
 
-              <Modal visible={isCurrencyDropdownOpen} transparent={true} animationType="fade">
-                <TouchableOpacity 
-                  style={styles.modalOverlay} 
-                  activeOpacity={1} 
-                  onPress={() => setIsCurrencyDropdownOpen(false)}
-                >
-                  <TouchableOpacity activeOpacity={1} style={styles.currencyDropdownMenu}>
-                    <View style={styles.searchBarContainer}>
-                      <Search size={16} color="#71717a" />
-                      <TextInput 
-                        style={styles.searchInput}
-                        placeholder="Search..."
-                        placeholderTextColor="#71717a"
-                        value={currencySearchQuery}
-                        onChangeText={setCurrencySearchQuery}
-                        autoCorrect={false}
-                      />
-                    </View>
-                    <ScrollView bounces={false} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-                      {filteredCurrencies.length > 0 ? (
-                        filteredCurrencies.map((currency) => (
-                          <TouchableOpacity 
-                            key={currency.code} 
-                            style={[
-                              styles.currencyOption, 
-                              selectedCurrency.code === currency.code && { backgroundColor: '#27272a' }
-                            ]} 
-                            onPress={() => { 
-                              setSelectedCurrency(currency); 
-                              setIsCurrencyDropdownOpen(false); 
-                              setCurrencySearchQuery('');
-                            }}
-                          >
-                            <Text style={[
-                              styles.currencyOptionText, 
-                              selectedCurrency.code === currency.code && { color: '#8b5cf6', fontWeight: 'bold' }
-                            ]}>
-                              {currency.code}
-                            </Text>
-                          </TouchableOpacity>
-                        ))
-                      ) : (
-                        <Text style={{ color: '#71717a', textAlign: 'center', padding: 15 }}>No results</Text>
-                      )}
-                    </ScrollView>
-                  </TouchableOpacity>
-                </TouchableOpacity>
-              </Modal>
+              <CurrencyDropdownModal 
+                visible={isCurrencyDropdownOpen} 
+                onClose={() => setIsCurrencyDropdownOpen(false)}
+                selectedCurrency={selectedCurrency}
+                onSelectCurrency={setSelectedCurrency}
+              />
         
               <MapPickerModal 
                   visible={isMapModalOpen} region={mapRegion} onRegionChange={setMapRegion} 

@@ -53,7 +53,7 @@ export default function RootLayout() {
   return (
     <AlertProvider>
       <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="./(tabs)/explore" />
+        <Stack.Screen name="(tabs)" />
         <Stack.Screen name="login" options={{ presentation: 'modal' }} />
       </Stack>
     </AlertProvider>

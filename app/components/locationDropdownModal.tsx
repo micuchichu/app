@@ -32,7 +32,7 @@ const styles = StyleSheet.create({
   dropdownBox: {
     backgroundColor: '#18181b',
     width: '100%',
-    maxHeight: '60%', // Prevents the list from getting too tall
+    maxHeight: '60%',
     borderRadius: 15,
     borderWidth: 1,
     borderColor: '#27272a',

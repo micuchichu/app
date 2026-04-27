@@ -5,7 +5,7 @@ import { supabase } from '@/app/lib/supabase';
 import { GlobalStyles } from '@/app/constants/globalStyles';
 import { Job } from '@/app/components/jobCard';
 import { useAlert } from '@/app/components/alertContext';
-import { ScrollableJobs } from '@/app/components/scrollableJobs'; // <-- Import the new component
+import { ScrollableJobs } from '@/app/components/scrollableJobs';
 
 export default function FeedScreen() {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -28,7 +28,7 @@ export default function FeedScreen() {
         *,
         id:job_id,
         currencies ( currency_text ),
-        employers ( rating, verified, profiles ( full_name ) ),
+        employers ( id, rating, verified, profiles ( full_name ) ),
         locations!job_location_id ( city_name ),
         job_postings_candidates ( employee_id ) 
       `)
@@ -41,7 +41,7 @@ export default function FeedScreen() {
     } else {
       setJobs(data || []);
     }
-    
+
     setIsLoading(false);
   };
 

@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet, Animated, PanResponder, Dimensions, ScrollView, Platform, Alert, ActivityIndicator } from 'react-native';
 import { User, X, Star, BadgeCheck, MapPin, Calendar } from 'lucide-react-native';
-import { useRouter } from 'expo-router'; // Brought in the router to actually navigate!
+import { useRouter } from 'expo-router'; 
 
 import { supabase } from '@/app/lib/supabase';
 import { Colors } from '@/app/constants/colors';
+
+import { useAlert } from './alertContext';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -28,7 +30,9 @@ export function ProfileModal({ visible, onClose, userId, fallbackName = 'Anonymo
 
   const [loading, setLoading] = useState(false);
   const [profileData, setProfileData] = useState<any>(null);
+  
   const [employerData, setEmployerData] = useState<any>(null);
+  const [employeeData, setEmployeeData] = useState<any>(null);
   const [jobsPostedCount, setJobsPostedCount] = useState(0);
 
   useEffect(() => {
@@ -42,6 +46,7 @@ export function ProfileModal({ visible, onClose, userId, fallbackName = 'Anonymo
       panY.setValue(HIDDEN_Y);
       setProfileData(null);
       setEmployerData(null);
+      setEmployeeData(null);
       setJobsPostedCount(0);
     }
   }, [visible, userId]);
@@ -64,6 +69,12 @@ export function ProfileModal({ visible, onClose, userId, fallbackName = 'Anonymo
         .eq('id', id)
         .maybeSingle();
 
+      const { data: employee } = await supabase
+        .from('employees')
+        .select('rating')
+        .eq('id', id)
+        .maybeSingle();
+
       const { count } = await supabase
         .from('job_postings')
         .select('*', { count: 'exact', head: true })
@@ -72,6 +83,7 @@ export function ProfileModal({ visible, onClose, userId, fallbackName = 'Anonymo
 
       setProfileData(profile);
       setEmployerData(employer);
+      setEmployeeData(employee);
       setJobsPostedCount(count || 0);
 
     } catch (error) {
@@ -125,6 +137,7 @@ export function ProfileModal({ visible, onClose, userId, fallbackName = 'Anonymo
 
   const displayName = profileData?.full_name || fallbackName;
   const employerRating = employerData?.rating || 0;
+  const employeeRating = employeeData?.rating || 0;
   const isVerified = employerData?.verified || false;
   const joinDate = profileData?.created_at 
     ? new Date(profileData.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) 
@@ -152,7 +165,7 @@ export function ProfileModal({ visible, onClose, userId, fallbackName = 'Anonymo
             </TouchableOpacity>
 
             <View style={styles.modalAvatarPlaceholder}>
-              <User size={40} color="white" />
+              <User size={40} color="white"/> 
             </View>
 
             <View style={styles.modalNameRow}>
@@ -165,18 +178,44 @@ export function ProfileModal({ visible, onClose, userId, fallbackName = 'Anonymo
             <Text style={styles.modalEmployerHandle}>@{displayName.replace(/\s+/g, '').toLowerCase()}</Text>
 
             <View style={styles.modalStatsRow}>
+              
               <View style={styles.modalStatBox}>
-                <Text style={styles.modalStatNumber}>
-                  {employerRating > 0 ? employerRating.toFixed(1) : 'New'} <Star size={16} color="#fbbf24" fill={employerRating > 0 ? "#fbbf24" : "transparent"} />
-                </Text>
-                <Text style={styles.modalStatLabel}>Employer Rating</Text>
+                <View style={styles.ratingContainer}>
+                  {employerRating > 0 ? (
+                    <>
+                      <Text style={styles.modalStatNumber}>{employerRating.toFixed(1)}</Text>
+                      <Star size={16} color="#fbbf24" fill="#fbbf24" style={{ marginLeft: 6 }} />
+                    </>
+                  ) : (
+                    <Text style={styles.notRatedText}>Not rated</Text>
+                  )}
+                </View>
+                <Text style={styles.modalStatLabel}>Employer</Text>
               </View>
               
+              <View style={styles.statDivider} />
+              
+              <View style={styles.modalStatBox}>
+                <View style={styles.ratingContainer}>
+                  {employeeRating > 0 ? (
+                    <>
+                      <Text style={styles.modalStatNumber}>{employeeRating.toFixed(1)}</Text>
+                      <Star size={16} color="#fbbf24" fill="#fbbf24" style={{ marginLeft: 6 }} />
+                    </>
+                  ) : (
+                    <Text style={styles.notRatedText}>Not rated</Text>
+                  )}
+                </View>
+                <Text style={styles.modalStatLabel}>Worker</Text>
+              </View>
+
               {isExpanded && (
                 <>
                   <View style={styles.statDivider} />
                   <View style={styles.modalStatBox}>
-                    <Text style={styles.modalStatNumber}>{jobsPostedCount}</Text>
+                    <View style={styles.ratingContainer}>
+                      <Text style={styles.modalStatNumber}>{jobsPostedCount}</Text>
+                    </View>
                     <Text style={styles.modalStatLabel}>Active Jobs</Text>
                   </View>
                 </>
@@ -238,7 +277,10 @@ const styles = StyleSheet.create({
   modalStatsRow: { flexDirection: 'row', width: '100%', justifyContent: 'center', borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#27272a', paddingVertical: 15, marginBottom: 10 },
   modalStatBox: { flex: 1, alignItems: 'center' },
   statDivider: { width: 1, height: 30, backgroundColor: '#27272a' },
-  modalStatNumber: { color: 'white', fontSize: 20, fontWeight: 'bold', flexDirection: 'row', alignItems: 'center', gap: 6 },
+  
+  ratingContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 26 },
+  modalStatNumber: { color: 'white', fontSize: 20, fontWeight: 'bold' },
+  notRatedText: { color: Colors.textMuted || '#a1a1aa', fontSize: 14, fontWeight: '600' },
   modalStatLabel: { color: '#a1a1aa', fontSize: 12, marginTop: 4 },
 
   expandedContent: { flex: 1, width: '100%', paddingHorizontal: 25, paddingTop: 10 },

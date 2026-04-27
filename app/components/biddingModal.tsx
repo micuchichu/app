@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
-// REMOVED DollarSign from imports
 import { X } from 'lucide-react-native';
 
 import { supabase } from '@/app/lib/supabase';
@@ -117,13 +116,11 @@ export const BiddingModal = ({ visible, job, userId, onClose }: BiddingModalProp
 
           <View style={styles.infoBox}>
             <Text style={styles.infoTitle} numberOfLines={1}>{job.title}</Text>
-            {/* FIXED: Using proper dynamic currency format */}
             <Text style={styles.infoSub}>Employer's Budget: {job.pay_amount} {currencyCode}</Text>
           </View>
 
           <Text style={styles.inputLabel}>Your Proposed Offer</Text>
           <View style={styles.inputContainer}>
-            {/* REMOVED the hardcoded DollarSign icon */}
             <TextInput
               style={styles.input}
               placeholder="e.g. 50.00"
@@ -134,7 +131,6 @@ export const BiddingModal = ({ visible, job, userId, onClose }: BiddingModalProp
               editable={!isSubmitting}
               autoFocus
             />
-            {/* Displaying the exact dynamic currency string right next to the user's typing */}
             <Text style={styles.currencyBadge}>{currencyCode}</Text>
           </View>
 

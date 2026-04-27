@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Modal, View, TouchableOpacity, StyleSheet, ActivityIndicator, Platform, Animated, PanResponder, Dimensions, Text } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import { ArrowLeft, MapPin, Filter, Compass, LocateFixed } from 'lucide-react-native'; // <-- NEW ICONS
+import { ArrowLeft, MapPin, Filter, Compass, LocateFixed } from 'lucide-react-native';
 import * as Location from 'expo-location';
 
 import { supabase } from '@/app/lib/supabase';

@@ -108,7 +108,7 @@ export const ScrollableJobs = ({ jobs, userId, isLoading = false, onRefresh, ini
           />
         )}
         keyExtractor={item => item.id.toString()}
-        initialScrollIndex={initialIndex} // Starts at the specific job if provided!
+        initialScrollIndex={initialIndex}
         snapToInterval={height} 
         snapToAlignment="start"
         decelerationRate="fast"

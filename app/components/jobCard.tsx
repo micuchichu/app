@@ -108,7 +108,7 @@ export default function JobCard({ item, onApply, userId, isActive }: { item: Job
     <View style={styles.jobCard}>
       
       {item.video_url ? (
-        <VideoView player={player} style={styles.bgImage} contentFit="cover" fullscreenOptions={{enable: true}} nativeControls={false} />
+        <VideoView key={`video-${item.id}`} player={player} style={styles.bgImage} contentFit="cover" fullscreenOptions={{enable: true}} nativeControls={false} />
       ) : (
         <Image source={{ uri: item.thumbnail_url || fallbackImage }} style={styles.bgImage} />
       )}
@@ -151,11 +151,11 @@ export default function JobCard({ item, onApply, userId, isActive }: { item: Job
           </TouchableOpacity>
         </View>
       </View>
-
+      
       <ProfileModal 
         visible={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
-        userId={item.employers?.id || null}
+        userId={(item as any).employer_id || null} 
         fallbackName={employerName}
       />
 

@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
 
     locateButton: {
         position: 'absolute',
-        bottom: 170, // Sits perfectly right above your bottom panel
+        bottom: 170,
         right: 20,
         backgroundColor: '#18181b',
         width: 50,
@@ -97,7 +97,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderWidth: 1,
         borderColor: '#27272a',
-        // Subtle drop shadow for floating effect
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.3,

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase'; // Adjust path if needed
+import { supabase } from '../lib/supabase';
 
 export interface CountryRecord {
   phone_prefix: string;
