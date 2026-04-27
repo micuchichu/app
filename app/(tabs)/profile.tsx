@@ -155,7 +155,7 @@ export default function ProfileScreen() {
   return (
     <ScrollView style={styles.screenContainer} contentContainerStyle={{paddingBottom: 120}} keyboardShouldPersistTaps="handled">
       
-      <View style={styles.profileHeader}>
+      <View style={styles.islandCard}>
         <TouchableOpacity style={styles.settingsIcon} onPress={handleSignOut}>
           <LogOut size={24} color={Colors.error} />
         </TouchableOpacity>
@@ -207,7 +207,7 @@ export default function ProfileScreen() {
       </TouchableOpacity>
 
       <View style={styles.sectionHeaderRow}>
-        <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>About Me</Text>
+        <Text style={styles.sectionTitle}>About Me</Text>
         {!isEditingBio && bio !== '' && (
           <TouchableOpacity onPress={() => { setBioInput(bio); setIsEditingBio(true); }} style={styles.editBtn}>
             <Edit2 size={16} color={Colors.primary} />
@@ -215,36 +215,38 @@ export default function ProfileScreen() {
         )}
       </View>
 
-      {isEditingBio ? (
-        <View style={styles.editSectionContainer}>
-          <TextInput
-            style={styles.textInputArea}
-            multiline
-            placeholder="Tell others about yourself..."
-            placeholderTextColor={Colors.textMuted}
-            value={bioInput}
-            onChangeText={setBioInput}
-            autoFocus
-          />
-          <View style={styles.editActions}>
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsEditingBio(false)}>
-              <Text style={styles.cancelBtnText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.saveBtn} onPress={handleSaveBio}>
-              <Text style={styles.saveBtnText}>Save</Text>
-            </TouchableOpacity>
+      <View style={styles.islandCard}>
+        {isEditingBio ? (
+          <View style={styles.editSectionContainer}>
+            <TextInput
+              style={styles.textInputArea}
+              multiline
+              placeholder="Tell others about yourself..."
+              placeholderTextColor={Colors.textMuted}
+              value={bioInput}
+              onChangeText={setBioInput}
+              autoFocus
+            />
+            <View style={styles.editActions}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsEditingBio(false)}>
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleSaveBio}>
+                <Text style={styles.saveBtnText}>Save</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      ) : bio ? (
-        <Text style={styles.bioText}>{bio}</Text>
-      ) : (
-        <TouchableOpacity style={styles.dashedAddBtn} onPress={() => { setBioInput(''); setIsEditingBio(true); }}>
-          <Text style={styles.dashedAddBtnText}>+ Add a bio</Text>
-        </TouchableOpacity>
-      )}
+        ) : bio ? (
+          <Text style={styles.bioText}>{bio}</Text>
+        ) : (
+          <TouchableOpacity style={styles.dashedAddBtn} onPress={() => { setBioInput(''); setIsEditingBio(true); }}>
+            <Text style={styles.dashedAddBtnText}>+ Add a bio</Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
       <View style={styles.sectionHeaderRow}>
-        <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>My Expertise</Text>
+        <Text style={styles.sectionTitle}>My Expertise</Text>
         {!isEditingSkills && skills.length > 0 && (
           <TouchableOpacity onPress={() => { setEditableSkills([...skills]); setIsEditingSkills(true); }} style={styles.editBtn}>
             <Edit2 size={16} color={Colors.primary} />
@@ -252,49 +254,51 @@ export default function ProfileScreen() {
         )}
       </View>
 
-      {isEditingSkills ? (
-        <View style={styles.editSectionContainer}>
-          <View style={styles.skillsContainer}>
-            {editableSkills.map((skill, index) => (
-              <TouchableOpacity key={index} style={styles.skillPillEdit} onPress={() => handleRemoveSkill(skill)}>
-                <Text style={styles.skillPillText}>{skill}</Text>
-                <X size={14} color="#d8b4fe" style={{ marginLeft: 6 }} />
+      <View style={styles.islandCard}>
+        {isEditingSkills ? (
+          <View style={styles.editSectionContainer}>
+            <View style={styles.skillsContainer}>
+              {editableSkills.map((skill, index) => (
+                <TouchableOpacity key={index} style={styles.skillPillEdit} onPress={() => handleRemoveSkill(skill)}>
+                  <Text style={styles.skillPillText}>{skill}</Text>
+                  <X size={14} color="#d8b4fe" style={{ marginLeft: 6 }} />
+                </TouchableOpacity>
+              ))}
+            </View>
+            <View style={styles.addSkillRow}>
+              <TextInput
+                style={styles.skillInput}
+                placeholder="e.g. Graphic Design"
+                placeholderTextColor={Colors.textMuted}
+                value={newSkillInput}
+                onChangeText={setNewSkillInput}
+                onSubmitEditing={handleAddSkill}
+              />
+              <TouchableOpacity style={styles.addSkillBtn} onPress={handleAddSkill}>
+                <Text style={styles.addSkillBtnText}>Add</Text>
               </TouchableOpacity>
+            </View>
+            <View style={styles.editActions}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsEditingSkills(false)}>
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleSaveSkills}>
+                <Text style={styles.saveBtnText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : skills.length > 0 ? (
+          <View style={styles.skillsContainer}>
+            {skills.map((skill, index) => (
+              <View key={index} style={styles.skillPill}><Text style={styles.skillPillText}>{skill}</Text></View>
             ))}
           </View>
-          <View style={styles.addSkillRow}>
-            <TextInput
-              style={styles.skillInput}
-              placeholder="e.g. Graphic Design"
-              placeholderTextColor={Colors.textMuted}
-              value={newSkillInput}
-              onChangeText={setNewSkillInput}
-              onSubmitEditing={handleAddSkill}
-            />
-            <TouchableOpacity style={styles.addSkillBtn} onPress={handleAddSkill}>
-              <Text style={styles.addSkillBtnText}>Add</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.editActions}>
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsEditingSkills(false)}>
-              <Text style={styles.cancelBtnText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.saveBtn} onPress={handleSaveSkills}>
-              <Text style={styles.saveBtnText}>Save</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      ) : skills.length > 0 ? (
-        <View style={[styles.skillsContainer, { marginBottom: 25 }]}>
-          {skills.map((skill, index) => (
-            <View key={index} style={styles.skillPill}><Text style={styles.skillPillText}>{skill}</Text></View>
-          ))}
-        </View>
-      ) : (
-        <TouchableOpacity style={styles.dashedAddBtn} onPress={() => { setEditableSkills([]); setIsEditingSkills(true); }}>
-          <Text style={styles.dashedAddBtnText}>+ Add your skills</Text>
-        </TouchableOpacity>
-      )}
+        ) : (
+          <TouchableOpacity style={styles.dashedAddBtn} onPress={() => { setEditableSkills([]); setIsEditingSkills(true); }}>
+            <Text style={styles.dashedAddBtnText}>+ Add your skills</Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
       <Text style={[styles.sectionTitle, { marginTop: 5 }]}>Recent Activity</Text>
       <View style={styles.activityCard}>
@@ -319,8 +323,10 @@ const styles = StyleSheet.create({
   loadingContainer: { flex: 1, backgroundColor: Colors.background, justifyContent: 'center', alignItems: 'center' },
   screenContainer: { flex: 1, backgroundColor: Colors.background, padding: 20, paddingTop: Platform.OS === 'android' ? 60 : 60 },
   
-  profileHeader: { alignItems: 'center', backgroundColor: Colors.surface, padding: 20, borderRadius: 20, marginBottom: 20, position: 'relative' },
-  settingsIcon: { position: 'absolute', top: 20, right: 20 },
+  islandCard: { alignItems: 'center', backgroundColor: Colors.surface, padding: 20, borderRadius: 20, marginBottom: 20, position: 'relative' },
+  
+  profileHeader: { alignItems: 'center', width: '100%' },
+  settingsIcon: { position: 'absolute', top: 0, right: 0 },
   largeAvatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: Colors.surfaceHighlight, justifyContent: 'center', alignItems: 'center', marginBottom: 10, borderWidth: 2, borderColor: Colors.primary },
   profileName: { color: 'white', fontSize: 22, fontWeight: 'bold', textTransform: 'capitalize' },
   profileHandle: { color: Colors.textMuted, fontSize: 14, marginBottom: 20, fontWeight: '500' },
@@ -336,29 +342,30 @@ const styles = StyleSheet.create({
   gigButton: { flexDirection: 'row', backgroundColor: Colors.primary || '#8b5cf6', paddingVertical: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 25, shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
   gigButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold', marginLeft: 8 },
 
-  sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
-  sectionTitle: { color: 'white', fontSize: 18, fontWeight: 'bold', marginBottom: 15 },
-  editBtn: { padding: 4 },
-  bioText: { color: '#d4d4d8', fontSize: 14, lineHeight: 22, marginBottom: 25 },
+  sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: 15 },
+  sectionTitle: { color: 'white', fontSize: 18, fontWeight: 'bold' },
+  editBtn: { padding: 8, backgroundColor: 'rgba(139, 92, 246, 0.15)', borderRadius: 20 },
   
-  dashedAddBtn: { borderStyle: 'dashed', borderWidth: 1, borderColor: Colors.surfaceHighlight || '#3f3f46', padding: 15, borderRadius: 12, alignItems: 'center', marginBottom: 25 },
+  bioText: { color: '#d4d4d8', fontSize: 14, lineHeight: 22, width: '100%', textAlign: 'left' },
+  
+  dashedAddBtn: { borderStyle: 'dashed', borderWidth: 1, borderColor: Colors.surfaceHighlight || '#3f3f46', padding: 15, borderRadius: 12, alignItems: 'center', width: '100%' },
   dashedAddBtnText: { color: Colors.textMuted || '#a1a1aa', fontWeight: '600' },
   
-  editSectionContainer: { marginBottom: 25, backgroundColor: '#18181b', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#27272a' },
-  textInputArea: { color: 'white', fontSize: 14, minHeight: 100, textAlignVertical: 'top', backgroundColor: '#000', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#3f3f46' },
+  editSectionContainer: { width: '100%' },
+  textInputArea: { color: 'white', fontSize: 14, minHeight: 100, textAlignVertical: 'top', backgroundColor: '#000', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#3f3f46', width: '100%' },
   editActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 15 },
   cancelBtn: { paddingVertical: 8, paddingHorizontal: 15, borderRadius: 8, backgroundColor: Colors.surfaceHighlight || '#27272a' },
   cancelBtnText: { color: 'white', fontWeight: '600' },
   saveBtn: { paddingVertical: 8, paddingHorizontal: 15, borderRadius: 8, backgroundColor: Colors.primary || '#8b5cf6' },
   saveBtnText: { color: 'white', fontWeight: 'bold' },
 
-  skillsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  skillsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, width: '100%' },
   skillPill: { backgroundColor: 'rgba(139, 92, 246, 0.15)', paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(139, 92, 246, 0.5)' },
   skillPillEdit: { backgroundColor: 'rgba(139, 92, 246, 0.25)', paddingVertical: 8, paddingLeft: 14, paddingRight: 10, borderRadius: 20, borderWidth: 1, borderColor: Colors.primary, flexDirection: 'row', alignItems: 'center' },
   skillPillText: { color: '#d8b4fe', fontWeight: '600', fontSize: 14 },
   emptyText: { color: Colors.textMuted, fontStyle: 'italic', marginBottom: 20 },
   
-  addSkillRow: { flexDirection: 'row', gap: 10, marginTop: 15 },
+  addSkillRow: { flexDirection: 'row', gap: 10, marginTop: 15, width: '100%' },
   skillInput: { flex: 1, backgroundColor: '#000', color: 'white', paddingHorizontal: 15, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: '#3f3f46', fontSize: 14 },
   addSkillBtn: { backgroundColor: Colors.surfaceHighlight || '#27272a', justifyContent: 'center', paddingHorizontal: 15, borderRadius: 8 },
   addSkillBtnText: { color: 'white', fontWeight: '600' },

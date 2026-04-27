@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, Platform, FlatList, ActivityIndicator, Image, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Search, Map, Filter, MapPin, Briefcase, ChevronRight, User, X } from 'lucide-react-native';
+import { Search, Map, Filter, Briefcase, ChevronRight, User, X } from 'lucide-react-native';
 
 import { supabase } from '@/app/lib/supabase';
 import { Colors } from '@/app/constants/colors';
@@ -14,24 +14,23 @@ import { ScrollableJobs } from '@/app/components/scrollableJobs';
 export default function ExploreScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [submittedQuery, setSubmittedQuery] = useState('');
+  
   const [activeCategory, setActiveCategory] = useState('All');
+  const categories = ['All', 'Jobs', 'Services', 'Microjob', 'Part-time', 'Full-time', 'On-site', 'Online', 'Hybrid'];
 
   const [isMapVisible, setIsMapVisible] = useState(false);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [activeFilters, setActiveFilters] = useState<FilterState | undefined>(undefined);
 
   const [userId, setUserId] = useState<string | null>(null);
-  
   const [feedStartId, setFeedStartId] = useState<string | null>(null);
 
-  const [jobs, setJobs] = useState<any[]>([]);
+  const [feedItems, setFeedItems] = useState<any[]>([]);
 
   const [searchedProfiles, setSearchedProfiles] = useState<any[]>([]);
   const [selectedProfile, setSelectedProfile] = useState<any | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
-
-  const categories = ['All', 'Microjob', 'Part-time', 'Full-time', 'On-site', 'Online', 'Hybrid'];
 
   const fallbackImage = require('@/assets/nomedia.png');
 
@@ -44,12 +43,13 @@ export default function ExploreScreen() {
   }, []);
 
   useEffect(() => {
-    fetchJobsAndProfiles();
+    fetchData();
   }, [activeCategory, activeFilters, submittedQuery]);
 
-  const fetchJobsAndProfiles = async () => {
+  const fetchData = async () => {
     setIsLoading(true);
     try {
+      
       let jobQuery = supabase
         .from('job_postings')
         .select(`
@@ -67,7 +67,7 @@ export default function ExploreScreen() {
         jobQuery = jobQuery.ilike('title', `%${submittedQuery}%`);
       }
 
-      if (activeCategory !== 'All') {
+      if (activeCategory !== 'All' && activeCategory !== 'Jobs' && activeCategory !== 'Services') {
         const cat = activeCategory.toLowerCase();
         if (['microjob', 'part-time', 'full-time'].includes(cat)) {
           jobQuery = jobQuery.eq('schedule_type', cat);
@@ -94,9 +94,21 @@ export default function ExploreScreen() {
         }
       }
 
+      let serviceQuery = supabase
+        .from('services')
+        .select(`
+          *,
+          currencies ( currency_text ),
+          employees ( rating, profiles ( full_name ) )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (submittedQuery.trim() !== '') {
+        serviceQuery = serviceQuery.ilike('title', `%${submittedQuery}%`);
+      }
+
       const fetchProfiles = async () => {
         if (submittedQuery.trim() === '') return { data: null, error: null };
-        
         return await supabase
           .from('profiles')
           .select('id, full_name')
@@ -104,16 +116,51 @@ export default function ExploreScreen() {
           .limit(10);
       };
 
-      const [jobsResponse, profilesResponse] = await Promise.all([
-        jobQuery, 
-        fetchProfiles()
-      ]);
+      let rawJobs: any[] = [];
+      let rawServices: any[] = [];
+      
+      const fetchPromises = [];
+      fetchPromises.push(fetchProfiles());
 
-      if (jobsResponse.error) console.error("Error fetching jobs:", jobsResponse.error);
-      else setJobs(jobsResponse.data || []);
+      if (activeCategory === 'All' || activeCategory !== 'Services') {
+         fetchPromises.push(jobQuery);
+      } else {
+         fetchPromises.push(Promise.resolve({ data: [], error: null })); 
+      }
 
-      if (profilesResponse.error) console.error("Error fetching profiles:", profilesResponse.error);
+      if (activeCategory === 'All' || activeCategory === 'Services') {
+         fetchPromises.push(serviceQuery);
+      } else {
+         fetchPromises.push(Promise.resolve({ data: [], error: null })); 
+      }
+
+      const [profilesResponse, jobsResponse, servicesResponse] = await Promise.all(fetchPromises);
+
+      if (profilesResponse?.error) console.error("Error profiles:", profilesResponse.error);
       else setSearchedProfiles(profilesResponse.data || []);
+
+      if (jobsResponse.error) console.error("Error jobs:", jobsResponse.error);
+      else rawJobs = jobsResponse.data || [];
+
+      if (servicesResponse?.error) console.error("Error services:", servicesResponse.error);
+      else rawServices = servicesResponse?.data || [];
+
+      const normalizedJobs = rawJobs.map(job => ({ ...job, _type: 'job' }));
+      const normalizedServices = rawServices.map(service => ({ 
+        ...service, 
+        _type: 'service',
+        pay_amount: service.price, 
+        employer_id: service.employee_id, 
+        employers: {
+           profiles: { full_name: service.employees?.profiles?.full_name }
+        }
+      }));
+
+      const mixedFeed = [...normalizedJobs, ...normalizedServices].sort((a, b) => {
+         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+
+      setFeedItems(mixedFeed);
 
     } catch (e) {
       console.log(e);
@@ -126,27 +173,43 @@ export default function ExploreScreen() {
     setSubmittedQuery(searchQuery.trim());
   };
 
-  const renderJobCard = ({ item }: { item: any }) => {
-    const employerName = item.employers?.profiles?.full_name || 'Anonymous';
-    
+  const renderFeedCard = ({ item }: { item: any }) => {
+    const isService = item._type === 'service';
+    const creatorName = item.employers?.profiles?.full_name || 'Anonymous';
     const imageSource = item.thumbnail_url ? { uri: item.thumbnail_url } : fallbackImage;
 
     return (
-      <TouchableOpacity style={styles.gridCard} onPress={() => setFeedStartId(item.id)}>
+      <TouchableOpacity 
+        style={styles.gridCard} 
+        onPress={() => {
+           if (isService) {
+              setSelectedProfile({ id: item.employee_id, full_name: creatorName });
+           } else {
+              setFeedStartId(item.id);
+           }
+        }}
+      >
         <Image source={imageSource} style={styles.gridCardImage} />
         
         <View style={styles.gridCardOverlay} />
 
         <View style={styles.gridCardContent}>
           <View style={styles.gridCardTop}>
-             <View style={styles.payBadgeSmall}>
-               <Text style={styles.payBadgeTextSmall}>{item.pay_amount} {item.currencies?.currency_text || ''}</Text>
+             <View style={[styles.payBadgeSmall, isService && { backgroundColor: Colors.primary }]}>
+               <Text style={styles.payBadgeTextSmall}>
+                 {isService ? 'Service' : `${item.pay_amount} ${item.currencies?.currency_text || ''}`}
+               </Text>
              </View>
           </View>
           
           <View style={styles.gridCardBottom}>
+            {isService && (
+                <Text style={{ color: '#4ade80', fontSize: 12, fontWeight: 'bold', marginBottom: 2 }}>
+                    {item.price} {item.currencies?.currency_text || ''}
+                </Text>
+            )}
             <Text style={styles.gridCardTitle} numberOfLines={2}>{item.title}</Text>
-            <Text style={styles.gridCardEmployer} numberOfLines={1}>@{employerName.replace(/\s+/g, '').toLowerCase()}</Text>
+            <Text style={styles.gridCardEmployer} numberOfLines={1}>@{creatorName.replace(/\s+/g, '').toLowerCase()}</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -161,7 +224,7 @@ export default function ExploreScreen() {
           <Search size={20} color={Colors.textSubtle} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search jobs or people..."
+            placeholder="Search jobs, services, or people..."
             placeholderTextColor={Colors.textSubtle}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -192,8 +255,8 @@ export default function ExploreScreen() {
             <Map size={24} color={Colors.primary} />
           </View>
           <View style={styles.mapCardTextContainer}>
-            <Text style={styles.mapCardTitle}>Jobs Near Me</Text>
-            <Text style={styles.mapCardSub}>Explore opportunities on the map</Text>
+            <Text style={styles.mapCardTitle}>Opportunities Near Me</Text>
+            <Text style={styles.mapCardSub}>Explore the local map</Text>
           </View>
           <ChevronRight size={24} color={Colors.textSubtle} />
         </View>
@@ -221,7 +284,7 @@ export default function ExploreScreen() {
       )}
 
       <Text style={styles.sectionTitle}>
-        {submittedQuery ? `Jobs matching "${submittedQuery}"` : activeCategory === 'All' ? 'Latest Opportunities' : `${activeCategory} Jobs`}
+        {submittedQuery ? `Results matching "${submittedQuery}"` : activeCategory === 'All' ? 'Latest Opportunities' : `${activeCategory} Listings`}
       </Text>
     </View>
   );
@@ -230,10 +293,10 @@ export default function ExploreScreen() {
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <View style={styles.container}>
         <FlatList
-          data={jobs}
+          data={feedItems}
           key={'grid-2-cols'} 
           keyExtractor={(item, index) => item?.id ? item.id.toString() : index.toString()}
-          renderItem={renderJobCard}
+          renderItem={renderFeedCard}
           ListHeaderComponent={listHeader}
           numColumns={2}
           columnWrapperStyle={styles.row}
@@ -246,7 +309,7 @@ export default function ExploreScreen() {
               <View style={styles.emptyState}>
                 <Briefcase size={48} color={Colors.surfaceHighlight} />
                 <Text style={styles.emptyStateText}>
-                  {submittedQuery ? "No jobs found for this search." : "No jobs found matching your criteria."}
+                  {submittedQuery ? "No results found for this search." : "No results found matching your criteria."}
                 </Text>
                 <TouchableOpacity onPress={() => { setSearchQuery(''); setSubmittedQuery(''); setActiveCategory('All'); setActiveFilters(undefined); setSearchedProfiles([]); }}>
                   <Text style={{ color: Colors.primary, marginTop: 10, fontWeight: 'bold' }}>Clear Filters</Text>
@@ -283,10 +346,10 @@ export default function ExploreScreen() {
 
             {!!feedStartId && (
               <ScrollableJobs 
-                jobs={jobs as any} 
+                jobs={feedItems.filter(j => j._type === 'job') as any} 
                 userId={userId} 
                 initialJobId={feedStartId} 
-                onRefresh={fetchJobsAndProfiles} 
+                onRefresh={fetchData} 
               />
             )}
             
