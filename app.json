@@ -7,17 +7,11 @@
     "icon": "./assets/icon.png",
     "scheme": "microjobs",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "ios": {
-      "supportsTablet": true
-    },
     "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/icon.png",
-        "backgroundImage": "./assets/icon.png"
-      },
-      "edgeToEdgeEnabled": true,
+        "adaptiveIcon": {
+      "backgroundColor": "#E6F4FE",
+      "foregroundImage": "./assets/icon.png"
+    },
       "predictiveBackGestureEnabled": false,
       "package": "com.microminds.workly",
       "config": {
@@ -43,7 +37,8 @@
       ],
       "expo-web-browser",
       "@react-native-community/datetimepicker",
-      "expo-video"
+      "expo-video",
+      "react-native-edge-to-edge"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -52,7 +47,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "6b2b48e4-ac6b-4f95-a3cd-5cd693e3632a"      
+        "projectId": "6b2b48e4-ac6b-4f95-a3cd-5cd693e3632a"
       }
     },
     "owner": "masterminds"
