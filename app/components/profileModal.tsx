@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet, Animated, PanResponder, Dimensions, ScrollView, Platform, Alert, ActivityIndicator } from 'react-native';
+import { Modal, View, Text, TouchableOpacity, StyleSheet, Animated, PanResponder, Dimensions, ScrollView, Platform, ActivityIndicator } from 'react-native';
 import { User, X, Star, BadgeCheck, MapPin, Calendar } from 'lucide-react-native';
 import { useRouter } from 'expo-router'; 
 
 import { supabase } from '@/app/lib/supabase';
 import { Colors } from '@/app/constants/colors';
-
-import { useAlert } from './alertContext';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -34,6 +32,8 @@ export function ProfileModal({ visible, onClose, userId, fallbackName = 'Anonymo
   const [employerData, setEmployerData] = useState<any>(null);
   const [employeeData, setEmployeeData] = useState<any>(null);
   const [jobsPostedCount, setJobsPostedCount] = useState(0);
+  
+  const [userSkills, setUserSkills] = useState<string[]>([]);
 
   useEffect(() => {
     if (visible) {
@@ -48,6 +48,7 @@ export function ProfileModal({ visible, onClose, userId, fallbackName = 'Anonymo
       setEmployerData(null);
       setEmployeeData(null);
       setJobsPostedCount(0);
+      setUserSkills([]);
     }
   }, [visible, userId]);
 
@@ -81,6 +82,19 @@ export function ProfileModal({ visible, onClose, userId, fallbackName = 'Anonymo
         .eq('employer_id', id)
         .eq('active', true);
 
+      const { data: categoriesData } = await supabase
+        .from('employee_job_categories')
+        .select(`
+          category_id,
+          job_categories ( name )
+        `)
+        .eq('employee_id', id);
+
+      const mappedSkills = categoriesData
+        ?.map((row: any) => row.job_categories?.name)
+        .filter(Boolean) || [];
+
+      setUserSkills(mappedSkills);
       setProfileData(profile);
       setEmployerData(employer);
       setEmployeeData(employee);
@@ -240,9 +254,9 @@ export function ProfileModal({ visible, onClose, userId, fallbackName = 'Anonymo
               </View>
 
               <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Expertise</Text>
-              {profileData?.skills?.length > 0 ? (
+              {userSkills.length > 0 ? (
                 <View style={styles.badgesContainer}>
-                  {profileData.skills.map((skill: string, index: number) => (
+                  {userSkills.map((skill: string, index: number) => (
                     <View key={index} style={styles.badgePill}><Text style={styles.badgeText}>{skill}</Text></View>
                   ))}
                 </View>

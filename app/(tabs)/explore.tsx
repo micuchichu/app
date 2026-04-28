@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, Platform, FlatList, ActivityIndicator, Image, Modal } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, Platform, FlatList, ActivityIndicator, Image, Modal, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search, Map, Filter, Briefcase, ChevronRight, User, X } from 'lucide-react-native';
 
@@ -10,13 +10,16 @@ import { JobsMapModal } from '@/app/components/jobsMapModal';
 
 import { ProfileModal } from '@/app/components/profileModal';
 import { ScrollableJobs } from '@/app/components/scrollableJobs'; 
+import { ServiceModal } from '@/app/components/serviceModal';
 
 export default function ExploreScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [submittedQuery, setSubmittedQuery] = useState('');
   
+  const [feedMode, setFeedMode] = useState<'jobs' | 'services'>('jobs');
+  
   const [activeCategory, setActiveCategory] = useState('All');
-  const categories = ['All', 'Jobs', 'Services', 'Microjob', 'Part-time', 'Full-time', 'On-site', 'Online', 'Hybrid'];
+  const categories = ['All', 'Microjob', 'Part-time', 'Full-time', 'On-site', 'Online', 'Hybrid'];
 
   const [isMapVisible, setIsMapVisible] = useState(false);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
@@ -29,10 +32,57 @@ export default function ExploreScreen() {
 
   const [searchedProfiles, setSearchedProfiles] = useState<any[]>([]);
   const [selectedProfile, setSelectedProfile] = useState<any | null>(null);
+  const [selectedService, setSelectedService] = useState<any | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
 
   const fallbackImage = require('@/assets/nomedia.png');
+
+  const filterAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.timing(filterAnim, {
+      toValue: feedMode === 'jobs' ? 1 : 0,
+      duration: 100,
+      useNativeDriver: false,
+    }).start();
+  }, [feedMode]);
+
+  const animatedFilterBtnStyle = {
+    opacity: filterAnim,
+    width: filterAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, 48],
+    }),
+    marginLeft: filterAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, 10],
+    }),
+    transform: [{
+      scale: filterAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0.5, 1],
+      })
+    }],
+  };
+
+  const animatedFilterStyle = {
+    opacity: filterAnim,
+    height: filterAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, 50],
+    }),
+    marginTop: filterAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, 10],
+    }),
+    transform: [{
+      translateY: filterAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [-20, 0],
+      })
+    }],
+  };
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -44,7 +94,7 @@ export default function ExploreScreen() {
 
   useEffect(() => {
     fetchData();
-  }, [activeCategory, activeFilters, submittedQuery]);
+  }, [activeCategory, activeFilters, submittedQuery, feedMode]);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -95,7 +145,7 @@ export default function ExploreScreen() {
       }
 
       let serviceQuery = supabase
-        .from('services')
+        .from('service_postings')
         .select(`
           *,
           currencies ( currency_text ),
@@ -122,13 +172,13 @@ export default function ExploreScreen() {
       const fetchPromises = [];
       fetchPromises.push(fetchProfiles());
 
-      if (activeCategory === 'All' || activeCategory !== 'Services') {
+      if (feedMode === 'jobs') {
          fetchPromises.push(jobQuery);
       } else {
          fetchPromises.push(Promise.resolve({ data: [], error: null })); 
       }
 
-      if (activeCategory === 'All' || activeCategory === 'Services') {
+      if (feedMode === 'services') {
          fetchPromises.push(serviceQuery);
       } else {
          fetchPromises.push(Promise.resolve({ data: [], error: null })); 
@@ -156,11 +206,11 @@ export default function ExploreScreen() {
         }
       }));
 
-      const mixedFeed = [...normalizedJobs, ...normalizedServices].sort((a, b) => {
-         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      });
-
-      setFeedItems(mixedFeed);
+      if (feedMode === 'jobs') {
+        setFeedItems(normalizedJobs);
+      } else {
+        setFeedItems(normalizedServices);
+      }
 
     } catch (e) {
       console.log(e);
@@ -183,7 +233,7 @@ export default function ExploreScreen() {
         style={styles.gridCard} 
         onPress={() => {
            if (isService) {
-              setSelectedProfile({ id: item.employee_id, full_name: creatorName });
+              setSelectedService(item);
            } else {
               setFeedStartId(item.id);
            }
@@ -220,33 +270,42 @@ export default function ExploreScreen() {
     <View>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Explore</Text>
+
         <View style={styles.searchContainer}>
           <Search size={20} color={Colors.textSubtle} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search jobs, services, or people..."
+            placeholder={`Search ${feedMode}...`}
             placeholderTextColor={Colors.textSubtle}
             value={searchQuery}
             onChangeText={setSearchQuery}
             returnKeyType="search"
             onSubmitEditing={handleSearchSubmit} 
           />
-          <TouchableOpacity style={styles.filterBtn} onPress={() => setIsFilterVisible(true)}>
-            <Filter size={20} color={activeFilters ? Colors.primary : "white"} /> 
-          </TouchableOpacity>
+          <Animated.View style={[animatedFilterBtnStyle, { overflow: 'hidden' }]}>
+            <TouchableOpacity style={styles.filterBtn} onPress={() => setIsFilterVisible(true)}>
+              <Filter size={20} color={activeFilters ? Colors.primary : "white"} /> 
+            </TouchableOpacity>
+          </Animated.View>
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesContainer}>
-          {categories.map((cat) => (
-            <TouchableOpacity 
-              key={cat} 
-              style={[styles.categoryPill, activeCategory === cat && styles.categoryPillActive]}
-              onPress={() => setActiveCategory(cat)}
-            >
-              <Text style={[styles.categoryText, activeCategory === cat && styles.categoryTextActive]}>{cat}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        <Animated.View style={[animatedFilterStyle, { overflow: 'hidden' }]}>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false} 
+            contentContainerStyle={styles.categoriesContainer}
+          >
+            {categories.map((cat) => (
+              <TouchableOpacity 
+                key={cat} 
+                style={[styles.categoryPill, activeCategory === cat && styles.categoryPillActive]}
+                onPress={() => setActiveCategory(cat)}
+              >
+                <Text style={[styles.categoryText, activeCategory === cat && styles.categoryTextActive]}>{cat}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </Animated.View>
       </View>
 
       <TouchableOpacity style={styles.mapCard} onPress={() => setIsMapVisible(true)}>
@@ -261,6 +320,23 @@ export default function ExploreScreen() {
           <ChevronRight size={24} color={Colors.textSubtle} />
         </View>
       </TouchableOpacity>
+
+      {submittedQuery === '' && (
+        <View style={styles.modeToggleContainer}>
+          <TouchableOpacity 
+            style={[styles.modeToggleBtn, feedMode === 'jobs' && styles.modeToggleBtnActive]} 
+            onPress={() => setFeedMode('jobs')}
+          >
+            <Text style={[styles.modeToggleText, feedMode === 'jobs' && styles.modeToggleTextActive]}>Jobs</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.modeToggleBtn, feedMode === 'services' && styles.modeToggleBtnActive]} 
+            onPress={() => setFeedMode('services')}
+          >
+            <Text style={[styles.modeToggleText, feedMode === 'services' && styles.modeToggleTextActive]}>Services</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {submittedQuery !== '' && searchedProfiles.length > 0 && (
         <View style={{ marginBottom: 25 }}>
@@ -284,7 +360,11 @@ export default function ExploreScreen() {
       )}
 
       <Text style={styles.sectionTitle}>
-        {submittedQuery ? `Results matching "${submittedQuery}"` : activeCategory === 'All' ? 'Latest Opportunities' : `${activeCategory} Listings`}
+        {submittedQuery 
+          ? `Results matching "${submittedQuery}"` 
+          : feedMode === 'services' 
+            ? 'Latest Services' 
+            : activeCategory === 'All' ? 'Latest Jobs' : `${activeCategory} Jobs`}
       </Text>
     </View>
   );
@@ -309,7 +389,7 @@ export default function ExploreScreen() {
               <View style={styles.emptyState}>
                 <Briefcase size={48} color={Colors.surfaceHighlight} />
                 <Text style={styles.emptyStateText}>
-                  {submittedQuery ? "No results found for this search." : "No results found matching your criteria."}
+                  {submittedQuery ? `No ${feedMode} found for this search.` : `No ${feedMode} found matching your criteria.`}
                 </Text>
                 <TouchableOpacity onPress={() => { setSearchQuery(''); setSubmittedQuery(''); setActiveCategory('All'); setActiveFilters(undefined); setSearchedProfiles([]); }}>
                   <Text style={{ color: Colors.primary, marginTop: 10, fontWeight: 'bold' }}>Clear Filters</Text>
@@ -352,10 +432,15 @@ export default function ExploreScreen() {
                 onRefresh={fetchData} 
               />
             )}
-            
           </View>
         </Modal>
-
+        
+        <ServiceModal 
+          visible={!!selectedService}
+          onClose={() => setSelectedService(null)}
+          service={selectedService}
+        />
+        
       </View>
     </SafeAreaView>
   );
@@ -367,18 +452,25 @@ const styles = StyleSheet.create({
   
   header: { marginBottom: 20, paddingTop: Platform.OS === 'android' ? 20 : 10 },
   headerTitle: { color: 'white', fontSize: 32, fontWeight: 'bold', marginBottom: 15 },
+  
+  modeToggleContainer: { flexDirection: 'row', backgroundColor: Colors.surface || '#18181b', borderRadius: 12, padding: 3, marginBottom: 20, borderWidth: 1, borderColor: Colors.surfaceHighlight || '#27272a' },
+  modeToggleBtn: { flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: 8 },
+  modeToggleBtnActive: { backgroundColor: '#27272a' },
+  modeToggleText: { color: Colors.textSubtle || '#a1a1aa', fontWeight: '600', fontSize: 13 },
+  modeToggleTextActive: { color: 'white' },
+
   searchContainer: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   searchIcon: { position: 'absolute', left: 15, zIndex: 1 },
   searchInput: { flex: 1, backgroundColor: Colors.surfaceHighlight || '#27272a', color: 'white', paddingVertical: 14, paddingLeft: 45, paddingRight: 15, borderRadius: 12, fontSize: 16 },
   filterBtn: { backgroundColor: Colors.surfaceHighlight || '#27272a', padding: 14, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   
-  categoriesContainer: { gap: 10, paddingTop: 10 },
+  categoriesContainer: { gap: 10, height: 50, paddingTop: 10 },
   categoryPill: { backgroundColor: Colors.surface || '#18181b', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, borderWidth: 1, borderColor: Colors.surfaceHighlight || '#27272a' },
   categoryPillActive: { backgroundColor: Colors.primary || '#8b5cf6', borderColor: Colors.primary || '#8b5cf6' },
   categoryText: { color: Colors.textSubtle || '#a1a1aa', fontWeight: '600', fontSize: 14 },
   categoryTextActive: { color: 'white' },
 
-  mapCard: { backgroundColor: Colors.surface || '#18181b', borderRadius: 16, padding: 20, marginBottom: 25, borderWidth: 1, borderColor: Colors.surfaceHighlight || '#27272a' },
+  mapCard: { backgroundColor: Colors.surface || '#18181b', borderRadius: 16, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: Colors.surfaceHighlight || '#27272a' },
   mapCardContent: { flexDirection: 'row', alignItems: 'center' },
   mapIconBg: { backgroundColor: 'rgba(139, 92, 246, 0.15)', padding: 12, borderRadius: 12, marginRight: 15 },
   mapCardTextContainer: { flex: 1 },

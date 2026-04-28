@@ -48,7 +48,6 @@ function popularityScore(viewCount: number): number {
 function scoreJob(job: Job, prefs: UserPreferences | null, events: JobEvent[]): number {
   let score = 0;
 
-  // Location match
   if (prefs?.preferred_locations?.length && job.location) {
     const match = prefs.preferred_locations.some(
       l => l.toLowerCase() === job.location.toLowerCase()
@@ -56,7 +55,6 @@ function scoreJob(job: Job, prefs: UserPreferences | null, events: JobEvent[]): 
     if (match) score += 40;
   }
 
-  // Type match
   if (prefs?.preferred_types?.length && job.type) {
     const match = prefs.preferred_types.some(
       t => t.toLowerCase() === job.type.toLowerCase()
@@ -64,20 +62,16 @@ function scoreJob(job: Job, prefs: UserPreferences | null, events: JobEvent[]): 
     if (match) score += 30;
   }
 
-  // Pay range match
   const pay = parsePay(job.payAmount);
   if (pay !== null && prefs?.min_pay != null && prefs?.max_pay != null) {
     if (pay >= prefs.min_pay && pay <= prefs.max_pay) score += 20;
   }
 
-  // Negotiable bonus
   if (job.negotiable) score += 15;
 
-  // Freshness + popularity
   if (job.timestamp) score += freshnessScore(job.timestamp);
   score += popularityScore(job.viewCount ?? 0);
 
-  // Interaction signals
   const hidden = events.some(e => e.job_id === job.id && e.event_type === 'hide');
   const saved = events.some(e => e.job_id === job.id && e.event_type === 'save');
   const applied = events.some(e => e.job_id === job.id && e.event_type === 'apply');

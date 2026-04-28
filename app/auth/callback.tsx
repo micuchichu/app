@@ -1,4 +1,3 @@
-// app/auth/callback.tsx
 import * as Linking from 'expo-linking';
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';

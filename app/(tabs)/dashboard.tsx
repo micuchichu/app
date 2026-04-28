@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Modal, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Briefcase, User, Users, ChevronRight, X, Clock, Bookmark, Send } from 'lucide-react-native';
+import { Briefcase, User, Users, ChevronRight, X, Info, Bookmark, Send } from 'lucide-react-native';
 
 import { supabase } from '@/app/lib/supabase';
 import { Colors } from '@/app/constants/colors';
@@ -10,6 +10,9 @@ import { Colors } from '@/app/constants/colors';
 import { Job } from '@/app/components/jobCard';
 import { JobPreviewModal } from '../components/jobPreviewModal';
 import { ProfileModal } from '@/app/components/profileModal';
+import { ApplicantReviewModal, Applicant } from '../components/applicantReviewModal';
+import InfoModal from '../components/infoModal';
+import { useAlert } from '../components/alertContext';
 
 interface MyJob {
   id: string; 
@@ -21,13 +24,6 @@ interface MyJob {
   created_at: string;
   application_status?: string; 
   job_postings_candidates?: { employee_id: string }[]; 
-}
-
-interface Applicant {
-  employee_id: string;
-  pay_bidded?: number;
-  status?: string;
-  employees?: { profiles?: { full_name?: string } | null } | null;
 }
 
 export default function DashboardScreen() {
@@ -47,6 +43,9 @@ export default function DashboardScreen() {
   const [previewJob, setPreviewJob] = useState<Job | null>(null);
 
   const [selectedApplicantProfile, setSelectedApplicantProfile] = useState<Applicant | null>(null);
+  const [isInfoModalOpen, setInfoModalOpen] = useState(false);
+
+  const { showAlert } = useAlert();
 
   useEffect(() => {
     fetchDashboardData();
@@ -125,7 +124,8 @@ export default function DashboardScreen() {
         .select(`
           *, 
           employees!employee_id ( 
-            profiles ( full_name ) 
+            rating,
+            profiles ( full_name, email, phone_number ) 
           )
         `)
         .eq('job_id', job.id);
@@ -138,6 +138,98 @@ export default function DashboardScreen() {
       setIsLoadingApplicants(false);
     } else {
       setPreviewJob(job as unknown as Job); 
+    }
+  };
+
+  const handleAcceptApplicant = async (applicantId: string) => {
+    if (!selectedJob) return;
+
+    try {
+      const { error } = await supabase
+        .from('job_postings_candidates')
+        .update({ status: 'accepted' })
+        .eq('job_id', selectedJob.id)
+        .eq('employee_id', applicantId);
+
+      if (error) throw error;
+
+      setApplicants(prev => 
+        prev.map(app => app.employee_id === applicantId ? { ...app, status: 'accepted' } : app)
+      );
+      
+      showAlert("Success", "You have accepted this applicant!");
+    } catch (error: any) {
+      showAlert("Error", error.message);
+    }
+  };
+
+  const handleRejectApplicant = async (applicantId: string) => {
+    if (!selectedJob) return;
+
+    try {
+      const { error } = await supabase
+        .from('job_postings_candidates')
+        .update({ status: 'rejected' })
+        .eq('job_id', selectedJob.id)
+        .eq('employee_id', applicantId);
+
+      if (error) throw error;
+
+      setApplicants(prev => 
+        prev.filter(app => app.employee_id !== applicantId)
+      );
+      
+    } catch (error: any) {
+      showAlert("Error", error.message); 
+    }
+    
+    fetchDashboardData();
+  };
+
+  const handleRateApplicant = async (applicantId: string, newScore: number) => {
+    if (!selectedJob) return;
+
+    try {
+      const { data: employeeData, error: fetchError } = await supabase
+        .from('employees')
+        .select('rating')
+        .eq('id', applicantId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const currentRating = employeeData?.rating || 0;
+
+      let finalRating = newScore;
+      if (currentRating > 0) {
+        finalRating = ((currentRating * 9) + newScore) / 10;
+      }
+
+      const { error: updateError } = await supabase
+        .from('employees')
+        .update({ rating: finalRating })
+        .eq('id', applicantId);
+
+      if (updateError) throw updateError;
+
+      setApplicants(prev => 
+        prev.map(app => {
+          if (app.employee_id === applicantId) {
+            return {
+              ...app,
+              employees: {
+                ...app.employees,
+                rating: finalRating,
+              }
+            };
+          }
+          return app;
+        })
+      );
+      
+      showAlert("Success", "Rating submitted successfully!");
+    } catch (error: any) {
+      showAlert("Error", error.message);
     }
   };
 
@@ -204,29 +296,6 @@ export default function DashboardScreen() {
     );
   };
 
-  const renderApplicantCard = ({ item }: { item: Applicant }) => {
-    const applicantName = item.employees?.profiles?.full_name || 'Anonymous User';
-
-    return (
-      <TouchableOpacity 
-        style={styles.profileSearchCard} 
-        onPress={() => setSelectedApplicantProfile(item)}
-      >
-        <View style={styles.profileSearchAvatar}>
-          <User size={24} color="white" />
-        </View>
-        <Text style={styles.profileSearchName} numberOfLines={1}>{applicantName}</Text>
-        <Text style={styles.profileSearchJob}>Status: {item.status || 'Pending'}</Text>
-        
-        {item.pay_bidded ? (
-          <View style={styles.bidBadgeSmall}>
-            <Text style={styles.bidTextSmall}>Bid: {item.pay_bidded} {selectedJob?.currencies?.currency_text || ''}</Text>
-          </View>
-        ) : null}
-      </TouchableOpacity>
-    );
-  };
-
   const currentData = activeTab === 'posted' ? postedJobs : activeTab === 'saved' ? savedJobs : appliedJobs;
 
   return (
@@ -235,7 +304,12 @@ export default function DashboardScreen() {
         
         <View style={styles.mainHeaderRow}>
           <View>
-            <Text style={styles.headerTitle}>Dashboard</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={styles.headerTitle}>Dashboard</Text>
+              <TouchableOpacity onPress={() => setInfoModalOpen(true)}>
+                <Info size={24} color={Colors.textSubtle} />
+              </TouchableOpacity>
+            </View>
             <Text style={styles.subHeader}>Manage your activity</Text>
           </View>
         </View>
@@ -295,37 +369,18 @@ export default function DashboardScreen() {
         )}
       </View>
 
-      <Modal visible={!!selectedJob} animationType="slide" presentationStyle="pageSheet">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.modalTitle}>{selectedJob?.title}</Text>
-              <Text style={styles.modalSub}>Applicant Review</Text>
-            </View>
-            <TouchableOpacity style={styles.closeBtn} onPress={() => setSelectedJob(null)}>
-              <X size={24} color="white" />
-            </TouchableOpacity>
-          </View>
-
-          {isLoadingApplicants ? (
-             <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 50 }} />
-          ) : applicants.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Clock size={48} color={Colors.textMuted} />
-              <Text style={styles.emptyText}>No applicants yet. Check back soon!</Text>
-            </View>
-          ) : (
-            <FlatList
-              data={applicants}
-              keyExtractor={(item, index) => item.employee_id || index.toString()}
-              renderItem={renderApplicantCard}
-              numColumns={2}
-              columnWrapperStyle={styles.row}
-              contentContainerStyle={styles.listContainer}
-            />
-          )}
-        </View>
-      </Modal>
+      <ApplicantReviewModal 
+        visible={!!selectedJob}
+        onClose={() => setSelectedJob(null)}
+        jobTitle={selectedJob?.title || 'Unknown Job'}
+        jobCurrencyCode={selectedJob?.currencies?.currency_text || ''}
+        applicants={applicants}
+        isLoading={isLoadingApplicants}
+        onSelectApplicant={(applicant) => setSelectedApplicantProfile(applicant)}
+        onAcceptApplicant={handleAcceptApplicant}
+        onRejectApplicant={handleRejectApplicant}
+        onRateApplicant={handleRateApplicant}
+      />
 
       <ProfileModal 
         visible={!!selectedApplicantProfile}
@@ -338,6 +393,13 @@ export default function DashboardScreen() {
         userId={userId} 
         onClose={() => setPreviewJob(null)} 
         job={previewJob}
+      />
+
+      <InfoModal 
+        isVisible={isInfoModalOpen} 
+        onClose={() => setInfoModalOpen(false)} 
+        title="Dashboard Overview"
+        description="Welcome to your activity hub! Use the 'Posted' tab to review applicants for jobs you've created, the 'Applied' tab to track the status of your ongoing bids, and the 'Saved' tab to quickly access jobs you've bookmarked."
       />
 
     </SafeAreaView>

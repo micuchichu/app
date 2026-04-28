@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Platform, ActivityIndicator, TextInput } from 'react-native';
+import { 
+  StyleSheet, Text, View, TouchableOpacity, ScrollView, 
+  Platform, ActivityIndicator, TextInput, Modal, FlatList 
+} from 'react-native';
 
-import { User, LogOut, Star, Briefcase, Lock, Edit2, X, PlusCircle } from 'lucide-react-native';
+import { User, LogOut, Star, Briefcase, Lock, Edit2, X, PlusCircle, ChevronDown, Search } from 'lucide-react-native';
 import { router } from 'expo-router';
 
 import { supabase } from '@/app/lib/supabase';
@@ -10,6 +13,12 @@ import { GlobalStyles } from '@/app/constants/globalStyles';
 import { useAlert } from '@/app/components/alertContext';
 
 import { CreateGigModal } from '@/app/components/createGigModal';
+
+interface JobCategory {
+  id: number;
+  name: string;
+  parent_id?: number | null;
+}
 
 export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
@@ -22,9 +31,13 @@ export default function ProfileScreen() {
   const [isEditingBio, setIsEditingBio] = useState(false);
   const [bioInput, setBioInput] = useState('');
 
+  const [userSkills, setUserSkills] = useState<JobCategory[]>([]);
   const [isEditingSkills, setIsEditingSkills] = useState(false);
-  const [editableSkills, setEditableSkills] = useState<string[]>([]);
-  const [newSkillInput, setNewSkillInput] = useState('');
+  const [editableSkills, setEditableSkills] = useState<JobCategory[]>([]);
+  
+  const [availableCategories, setAvailableCategories] = useState<JobCategory[]>([]);
+  const [isCategoryModalVisible, setIsCategoryModalVisible] = useState(false);
+  const [categorySearchQuery, setCategorySearchQuery] = useState('');
 
   const [isGigModalVisible, setIsGigModalVisible] = useState(false);
 
@@ -32,7 +45,22 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     fetchUserProfile();
+    fetchJobCategories();
   }, []);
+
+  const fetchJobCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('job_categories')
+        .select('id, name, parent_id')
+        .order('name');
+
+      if (error) throw error;
+      setAvailableCategories(data || []);
+    } catch (error) {
+      console.log("Error fetching job categories:", error);
+    }
+  };
 
   const fetchUserProfile = async () => {
     setLoading(true);
@@ -46,7 +74,7 @@ export default function ProfileScreen() {
         return;
       }
 
-      const { data: profileData, error: profileError } = await supabase
+      const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
@@ -67,11 +95,21 @@ export default function ProfileScreen() {
       setEmployerRating(employerData?.rating || 0);
       setEmployeeRating(employeeData?.rating || 0);
 
-      if (profileError) {
-        setUserData({ email: user.email });
-      } else {
-        setUserData({ ...profileData, email: user.email });
-      }
+      const { data: userCategoriesData } = await supabase
+        .from('employee_job_categories')
+        .select(`
+          category_id,
+          job_categories ( id, name )
+        `)
+        .eq('employee_id', user.id);
+
+      const mappedSkills = userCategoriesData
+        ?.map((row: any) => row.job_categories)
+        .filter(Boolean) || [];
+
+      setUserSkills(mappedSkills);
+      setUserData({ ...(profileData || {}), email: user.email });
+
     } catch (error) {
       console.log("Error fetching user data:", error);
     } finally {
@@ -95,16 +133,16 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleAddSkill = () => {
-    const trimmedSkill = newSkillInput.trim();
-    if (trimmedSkill && !editableSkills.includes(trimmedSkill)) {
-      setEditableSkills([...editableSkills, trimmedSkill]);
+  const handleSelectSkill = (category: JobCategory) => {
+    if (!editableSkills.find(s => s.id === category.id)) {
+      setEditableSkills([...editableSkills, category]);
     }
-    setNewSkillInput('');
+    setIsCategoryModalVisible(false);
+    setCategorySearchQuery(''); 
   };
 
-  const handleRemoveSkill = (skillToRemove: string) => {
-    setEditableSkills(editableSkills.filter(s => s !== skillToRemove));
+  const handleRemoveSkill = (categoryId: number) => {
+    setEditableSkills(editableSkills.filter(s => s.id !== categoryId));
   };
 
   const handleSaveSkills = async () => {
@@ -112,10 +150,27 @@ export default function ProfileScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { error } = await supabase.from('profiles').update({ skills: editableSkills }).eq('id', user.id);
-      if (error) throw error;
+      const { error: deleteError } = await supabase
+        .from('employee_job_categories')
+        .delete()
+        .eq('employee_id', user.id);
 
-      setUserData({ ...userData, skills: editableSkills });
+      if (deleteError) throw deleteError;
+
+      if (editableSkills.length > 0) {
+        const insertData = editableSkills.map(skill => ({
+          employee_id: user.id,
+          category_id: skill.id
+        }));
+
+        const { error: insertError } = await supabase
+          .from('employee_job_categories')
+          .insert(insertData);
+
+        if (insertError) throw insertError;
+      }
+
+      setUserSkills(editableSkills);
       setIsEditingSkills(false);
     } catch (error: any) {
       showAlert("Error saving skills", error.message);
@@ -149,8 +204,11 @@ export default function ProfileScreen() {
   const displayName = userData?.full_name || emailPrefix;
   const currentJob = userData?.current_job || 'New Member';
   const age = userData?.age || '?';
-  const skills: string[] = userData?.skills || [];
   const bio = userData?.bio || '';
+
+  const filteredCategories = availableCategories.filter(cat => 
+    cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase())
+  );
 
   return (
     <ScrollView style={styles.screenContainer} contentContainerStyle={{paddingBottom: 120}} keyboardShouldPersistTaps="handled">
@@ -247,8 +305,8 @@ export default function ProfileScreen() {
 
       <View style={styles.sectionHeaderRow}>
         <Text style={styles.sectionTitle}>My Expertise</Text>
-        {!isEditingSkills && skills.length > 0 && (
-          <TouchableOpacity onPress={() => { setEditableSkills([...skills]); setIsEditingSkills(true); }} style={styles.editBtn}>
+        {!isEditingSkills && userSkills.length > 0 && (
+          <TouchableOpacity onPress={() => { setEditableSkills([...userSkills]); setIsEditingSkills(true); }} style={styles.editBtn}>
             <Edit2 size={16} color={Colors.primary} />
           </TouchableOpacity>
         )}
@@ -258,28 +316,24 @@ export default function ProfileScreen() {
         {isEditingSkills ? (
           <View style={styles.editSectionContainer}>
             <View style={styles.skillsContainer}>
-              {editableSkills.map((skill, index) => (
-                <TouchableOpacity key={index} style={styles.skillPillEdit} onPress={() => handleRemoveSkill(skill)}>
-                  <Text style={styles.skillPillText}>{skill}</Text>
+              {editableSkills.map((skill) => (
+                <TouchableOpacity key={skill.id} style={styles.skillPillEdit} onPress={() => handleRemoveSkill(skill.id)}>
+                  <Text style={styles.skillPillText}>{skill.name}</Text>
                   <X size={14} color="#d8b4fe" style={{ marginLeft: 6 }} />
                 </TouchableOpacity>
               ))}
             </View>
-            <View style={styles.addSkillRow}>
-              <TextInput
-                style={styles.skillInput}
-                placeholder="e.g. Graphic Design"
-                placeholderTextColor={Colors.textMuted}
-                value={newSkillInput}
-                onChangeText={setNewSkillInput}
-                onSubmitEditing={handleAddSkill}
-              />
-              <TouchableOpacity style={styles.addSkillBtn} onPress={handleAddSkill}>
-                <Text style={styles.addSkillBtnText}>Add</Text>
-              </TouchableOpacity>
-            </View>
+
+            <TouchableOpacity 
+              style={styles.dropdownTrigger} 
+              onPress={() => setIsCategoryModalVisible(true)}
+            >
+              <Text style={styles.dropdownTriggerText}>Select a Category...</Text>
+              <ChevronDown size={20} color={Colors.textMuted} />
+            </TouchableOpacity>
+
             <View style={styles.editActions}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsEditingSkills(false)}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => { setIsEditingSkills(false); setEditableSkills([...userSkills]); }}>
                 <Text style={styles.cancelBtnText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.saveBtn} onPress={handleSaveSkills}>
@@ -287,10 +341,12 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        ) : skills.length > 0 ? (
+        ) : userSkills.length > 0 ? (
           <View style={styles.skillsContainer}>
-            {skills.map((skill, index) => (
-              <View key={index} style={styles.skillPill}><Text style={styles.skillPillText}>{skill}</Text></View>
+            {userSkills.map((skill) => (
+              <View key={skill.id} style={styles.skillPill}>
+                <Text style={styles.skillPillText}>{skill.name}</Text>
+              </View>
             ))}
           </View>
         ) : (
@@ -314,6 +370,69 @@ export default function ProfileScreen() {
         visible={isGigModalVisible} 
         onClose={() => setIsGigModalVisible(false)} 
       />
+
+      <Modal 
+        visible={isCategoryModalVisible} 
+        transparent 
+        animationType="slide" 
+        onRequestClose={() => { setIsCategoryModalVisible(false); setCategorySearchQuery(''); }}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} onPress={() => { setIsCategoryModalVisible(false); setCategorySearchQuery(''); }} />
+          <View style={styles.categorySheet}>
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>Select a Skill</Text>
+              <TouchableOpacity onPress={() => { setIsCategoryModalVisible(false); setCategorySearchQuery(''); }} style={styles.closeSheetBtn}>
+                <X size={20} color="white" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.categorySearchContainer}>
+              <Search size={18} color={Colors.textMuted} style={styles.categorySearchIcon} />
+              <TextInput
+                style={styles.categorySearchInput}
+                placeholder="Search categories..."
+                placeholderTextColor={Colors.textMuted}
+                value={categorySearchQuery}
+                onChangeText={setCategorySearchQuery}
+              />
+              {categorySearchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setCategorySearchQuery('')}>
+                  <X size={16} color={Colors.textMuted} />
+                </TouchableOpacity>
+              )}
+            </View>
+            
+            {availableCategories.length === 0 ? (
+              <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 40 }} />
+            ) : filteredCategories.length === 0 ? (
+              <Text style={styles.noResultsText}>No categories found.</Text>
+            ) : (
+              <FlatList
+                data={filteredCategories}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={({ item }) => {
+                  const isSelected = editableSkills.some(s => s.id === item.id);
+                  return (
+                    <TouchableOpacity 
+                      style={[styles.categoryItem, isSelected && styles.categoryItemSelected]}
+                      onPress={() => handleSelectSkill(item)}
+                      disabled={isSelected}
+                    >
+                      <Text style={[styles.categoryItemText, isSelected && styles.categoryItemTextSelected]}>
+                        {item.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                }}
+                contentContainerStyle={{ paddingBottom: 40 }}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled" 
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
 
     </ScrollView>
   );
@@ -363,12 +482,9 @@ const styles = StyleSheet.create({
   skillPill: { backgroundColor: 'rgba(139, 92, 246, 0.15)', paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(139, 92, 246, 0.5)' },
   skillPillEdit: { backgroundColor: 'rgba(139, 92, 246, 0.25)', paddingVertical: 8, paddingLeft: 14, paddingRight: 10, borderRadius: 20, borderWidth: 1, borderColor: Colors.primary, flexDirection: 'row', alignItems: 'center' },
   skillPillText: { color: '#d8b4fe', fontWeight: '600', fontSize: 14 },
-  emptyText: { color: Colors.textMuted, fontStyle: 'italic', marginBottom: 20 },
   
-  addSkillRow: { flexDirection: 'row', gap: 10, marginTop: 15, width: '100%' },
-  skillInput: { flex: 1, backgroundColor: '#000', color: 'white', paddingHorizontal: 15, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: '#3f3f46', fontSize: 14 },
-  addSkillBtn: { backgroundColor: Colors.surfaceHighlight || '#27272a', justifyContent: 'center', paddingHorizontal: 15, borderRadius: 8 },
-  addSkillBtnText: { color: 'white', fontWeight: '600' },
+  dropdownTrigger: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#000', paddingHorizontal: 15, paddingVertical: 14, borderRadius: 8, borderWidth: 1, borderColor: '#3f3f46', marginTop: 15, width: '100%' },
+  dropdownTriggerText: { color: Colors.textMuted, fontSize: 14 },
 
   activityCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surface, padding: 15, borderRadius: 12, marginBottom: 10 },
   activityTextContainer: { marginLeft: 15, flex: 1 },
@@ -379,4 +495,20 @@ const styles = StyleSheet.create({
   restrictedCircle: { width: 100, height: 100, borderRadius: 50, backgroundColor: Colors.surface, justifyContent: 'center', alignItems: 'center', marginBottom: 25, borderWidth: 1, borderColor: Colors.surfaceHighlight },
   restrictedHeader: { color: 'white', fontSize: 24, fontWeight: 'bold', marginBottom: 10, textAlign: 'center' },
   restrictedSub: { color: Colors.textMuted, fontSize: 16, textAlign: 'center', marginBottom: 35, lineHeight: 22 },
+
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  categorySheet: { backgroundColor: '#18181b', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '80%' },
+  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  sheetTitle: { color: 'white', fontSize: 18, fontWeight: 'bold' },
+  closeSheetBtn: { padding: 6, backgroundColor: '#27272a', borderRadius: 20 },
+  
+  categorySearchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#000', borderRadius: 12, paddingHorizontal: 12, marginBottom: 15, borderWidth: 1, borderColor: '#3f3f46' },
+  categorySearchIcon: { marginRight: 8 },
+  categorySearchInput: { flex: 1, color: 'white', paddingVertical: 12, fontSize: 15 },
+  noResultsText: { color: Colors.textMuted, textAlign: 'center', marginTop: 20, fontSize: 15 },
+
+  categoryItem: { paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#27272a' },
+  categoryItemSelected: { opacity: 0.4 },
+  categoryItemText: { color: 'white', fontSize: 16 },
+  categoryItemTextSelected: { color: Colors.textMuted, textDecorationLine: 'line-through' },
 });

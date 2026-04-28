@@ -108,7 +108,7 @@ export function CreateGigModal({ visible, onClose }: CreateGigModalProps) {
             .ilike('currency_text', selectedCurrency.code.trim().toUpperCase()) 
             .maybeSingle(); 
 
-      const { error } = await supabase.from('services').insert({
+      const { error } = await supabase.from('service_postings').insert({
         employee_id: user.id,
         title: title.trim(),
         description: description.trim(),
