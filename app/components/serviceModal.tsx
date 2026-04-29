@@ -3,7 +3,8 @@ import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView, 
   Platform, Modal, Animated, PanResponder, Dimensions 
 } from 'react-native';
-import { X, User, Star, MessageCircle } from 'lucide-react-native';
+import { X, User, Star, MessageCircle, Copy, Check } from 'lucide-react-native';
+import * as Clipboard from 'expo-clipboard';
 
 import { Colors } from '@/app/constants/colors';
 import { ProfileModal } from './profileModal';
@@ -22,6 +23,8 @@ interface ServiceModalProps {
 export function ServiceModal({ visible, onClose, service }: ServiceModalProps) {
   const panY = useRef(new Animated.Value(HIDDEN_POSITION)).current;
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  
+  const [copiedField, setCopiedField] = useState<'email' | 'phone' | null>(null);
 
   useEffect(() => {
     if (visible) {
@@ -32,6 +35,7 @@ export function ServiceModal({ visible, onClose, service }: ServiceModalProps) {
       }).start();
     } else {
       panY.setValue(HIDDEN_POSITION);
+      setCopiedField(null);
     }
   }, [visible]);
 
@@ -68,11 +72,22 @@ export function ServiceModal({ visible, onClose, service }: ServiceModalProps) {
     })
   ).current;
 
+  const handleCopy = async (text: string, field: 'email' | 'phone') => {
+    await Clipboard.setStringAsync(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
+
   if (!service) return null;
 
-  const providerName = service.employers?.profiles?.full_name || 'Anonymous Freelancer';
-  const providerRating = service.employees?.rating || 0;
+  const profileData = service.employees?.profiles || service.employers?.profiles || service.profiles || {};
+
+  const providerName = profileData.full_name || 'Anonymous Freelancer';
+  const providerRating = service.employees?.rating || service.employers?.rating || 0;
   const currencyCode = service.currencies?.currency_text || '';
+  
+  const phone = profileData.phone_number || profileData.phone || null;
+  const email = profileData.email || null;
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={closeSheet}>
@@ -113,7 +128,7 @@ export function ServiceModal({ visible, onClose, service }: ServiceModalProps) {
             
             <View style={styles.priceTag}>
               <Text style={styles.priceText}>
-                {service.pay_amount} {currencyCode}
+                {service.pay_amount || service.price} {currencyCode}
               </Text>
             </View>
 
@@ -121,6 +136,38 @@ export function ServiceModal({ visible, onClose, service }: ServiceModalProps) {
             <Text style={styles.descriptionText}>
               {service.description || 'No description provided.'}
             </Text>
+
+            <Text style={[styles.sectionLabel, { marginTop: 30 }]}>Contact Info</Text>
+            
+            <View style={styles.contactRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.contactLabel}>Phone Number</Text>
+                <Text style={styles.contactValue}>{phone || 'Not Provided'}</Text>
+              </View>
+              {phone && (
+                <TouchableOpacity 
+                  style={styles.copyBtn} 
+                  onPress={() => handleCopy(phone, 'phone')}
+                >
+                  {copiedField === 'phone' ? <Check size={18} color="#4ade80" /> : <Copy size={18} color="white" />}
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <View style={styles.contactRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.contactLabel}>Email Address</Text>
+                <Text style={styles.contactValue}>{email || 'Not Provided'}</Text>
+              </View>
+              {email && (
+                <TouchableOpacity 
+                  style={styles.copyBtn} 
+                  onPress={() => handleCopy(email, 'email')}
+                >
+                  {copiedField === 'email' ? <Check size={18} color="#4ade80" /> : <Copy size={18} color="white" />}
+                </TouchableOpacity>
+              )}
+            </View>
 
           </ScrollView>
 
@@ -137,7 +184,7 @@ export function ServiceModal({ visible, onClose, service }: ServiceModalProps) {
       <ProfileModal 
         visible={isProfileModalOpen} 
         onClose={() => setIsProfileModalOpen(false)}
-        userId={service.employer_id || null} 
+        userId={service.employee_id || service.employer_id || null} 
       />
 
     </Modal>
@@ -147,22 +194,7 @@ export function ServiceModal({ visible, onClose, service }: ServiceModalProps) {
 const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' },
   
-  sheetCard: { 
-    position: 'absolute',
-    bottom: 0,
-    backgroundColor: '#18181b', 
-    borderTopLeftRadius: 30, 
-    borderTopRightRadius: 30, 
-    height: SHEET_HEIGHT,
-    width: '100%',
-    borderWidth: 1,
-    borderColor: '#27272a',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -10 },
-    shadowOpacity: 0.4,
-    shadowRadius: 15,
-    elevation: 20
-  },
+  sheetCard: { position: 'absolute', bottom: 0, backgroundColor: '#18181b', borderTopLeftRadius: 30, borderTopRightRadius: 30, height: SHEET_HEIGHT, width: '100%', borderWidth: 1, borderColor: '#27272a', shadowColor: '#000', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.4, shadowRadius: 15, elevation: 20 },
 
   dragZone: { width: '100%', height: 35, alignItems: 'center', justifyContent: 'center' },
   dragHandle: { width: 40, height: 5, backgroundColor: '#3f3f46', borderRadius: 3 },
@@ -171,7 +203,7 @@ const styles = StyleSheet.create({
   headerTitle: { color: 'white', fontSize: 18, fontWeight: 'bold' },
   closeBtn: { padding: 5, backgroundColor: '#27272a', borderRadius: 20 },
 
-  scrollContent: { padding: 25, paddingBottom: 100 },
+  scrollContent: { padding: 25, paddingBottom: 200 },
   
   providerCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#000', padding: 15, borderRadius: 16, marginBottom: 20, borderWidth: 1, borderColor: '#27272a' },
   providerAvatar: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#3f3f46', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
@@ -187,6 +219,11 @@ const styles = StyleSheet.create({
 
   sectionLabel: { color: 'white', fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
   descriptionText: { color: '#d4d4d8', fontSize: 15, lineHeight: 24 },
+
+  contactRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#000', padding: 16, borderRadius: 16, marginBottom: 12, borderWidth: 1, borderColor: '#27272a' },
+  contactLabel: { color: '#a1a1aa', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  contactValue: { color: 'white', fontSize: 16, fontWeight: '600' }, 
+  copyBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#27272a', justifyContent: 'center', alignItems: 'center' },
 
   footer: { position: 'absolute', bottom: 0, width: '100%', paddingHorizontal: 25, paddingTop: 15, paddingBottom: Platform.OS === 'ios' ? 40 : 25, backgroundColor: '#18181b', borderTopWidth: 1, borderTopColor: '#27272a' },
   contactBtn: { flexDirection: 'row', backgroundColor: Colors.primary || '#8b5cf6', paddingVertical: 16, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },

@@ -4,7 +4,7 @@ import {
   ScrollView, Dimensions, Platform, KeyboardAvoidingView, ActivityIndicator,
   TextInput
 } from 'react-native';
-import { Lock, ChevronDown, Map as MapIcon, MapPinnedIcon, MapPin, InfoIcon, Search } from 'lucide-react-native';
+import { Lock, ChevronDown, Map as MapIcon, MapPinnedIcon, MapPin, InfoIcon, Search, X } from 'lucide-react-native';
 import * as Location from 'expo-location';
 
 import { supabase } from '@/app/lib/supabase';
@@ -12,11 +12,11 @@ import { useLocationManager } from '@/app/hooks/locationManager';
 import { useJobSubmit } from '@/app/hooks/jobSubmit';
 import Switch from '@/app/components/switch';
 import { MapPickerModal } from '@/app/components/mapPickerModal';
-import { LocationDropdownModal } from '@/app/components/locationDropdownModal';
 import InfoModal from '@/app/components/infoModal';
 import { MediaPickerBox } from '@/app/components/mediaPickerBox';
 import { getDefaultCurrency, Currency } from '@/app/hooks/utils';
 import { CurrencyDropdownModal } from '@/app/components/currencyDropdownModal';
+import { CategorySelectModal, JobCategory } from '@/app/components/categorySelectModal';
 
 const screenWidth = Dimensions.get('window').width;
 const contentWidth = screenWidth - 40;
@@ -53,6 +53,10 @@ export default function PostScreen() {
   
   const [dbCurrencies, setDbCurrencies] = useState<Currency[]>([]);
 
+  const [availableCategories, setAvailableCategories] = useState<JobCategory[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<JobCategory[]>([]);
+  const [isCategoryModalVisible, setIsCategoryModalVisible] = useState(false);
+
   useEffect(() => {
       const fetchCurrencies = async () => {
           const { data, error } = await supabase
@@ -65,7 +69,19 @@ export default function PostScreen() {
           }
       };
 
+      const fetchJobCategories = async () => {
+        const { data, error } = await supabase
+          .from('job_categories')
+          .select('id, name, parent_id')
+          .order('name');
+  
+        if (data && !error) {
+          setAvailableCategories(data);
+        }
+      };
+
       fetchCurrencies();
+      fetchJobCategories();
   }, []);
 
   const uniqueCurrencies = Array.from(new Map([getDefaultCurrency(), ...dbCurrencies].map(item => [item.code, item])).values())
@@ -100,6 +116,17 @@ export default function PostScreen() {
       setIsMapModalOpen(false);
       await locManager.processCoordinates(mapRegion.latitude, mapRegion.longitude);
       locManager.setIsGettingLocation(false);
+  };
+
+  const handleSelectCategory = (category: JobCategory) => {
+    if (!selectedCategories.find(c => c.id === category.id)) {
+      setSelectedCategories([...selectedCategories, category]);
+    }
+    setIsCategoryModalVisible(false);
+  };
+
+  const handleRemoveCategory = (categoryId: number) => {
+    setSelectedCategories(selectedCategories.filter(c => c.id !== categoryId));
   };
 
   const handleGoToLogin = async () => {
@@ -248,20 +275,18 @@ export default function PostScreen() {
             <View style={styles.islandContainer}>
               <Text style={[styles.inputLabel, { marginTop: 0 }]}>Location</Text>
               <View style={{ flexDirection: 'row', gap: 10 }}>
-                <TouchableOpacity 
+                <View 
                   style={[styles.formInput, { flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderColor: locManager.gpsData ? '#4ade80' : 'transparent', borderWidth: locManager.gpsData ? 1 : 0 }]} 
-                  onPress={() => setIsDropdownOpen(true)}
-                  disabled={locManager.isLoadingLocations || locManager.isGettingLocation}
-                >
+                  >
                   {locManager.isLoadingLocations || locManager.isGettingLocation ? (
                       <ActivityIndicator size="small" color="#71717a" />
                   ) : (
                       <>
                         <Text style={{ color: (locManager.selectedLocId || locManager.gpsData) ? 'white' : '#71717a', fontSize: 16 }}>{locManager.getDisplayLocationName()}</Text>
-                        {locManager.gpsData ? <MapPin size={20} color="#4ade80" /> : <ChevronDown size={20} color="#71717a" />}
+                        {locManager.gpsData && <MapPin size={20} color="#4ade80" /> }
                       </>
                   )}
-                </TouchableOpacity>
+                </View>
   
                 <TouchableOpacity style={styles.iconButton} onPress={openMapPicker}>
                     <MapIcon size={22} color="#8b5cf6" />
@@ -272,11 +297,32 @@ export default function PostScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-              <LocationDropdownModal 
-                  visible={isDropdownOpen} locations={locManager.locations} selectedId={locManager.selectedLocId} 
-                  onSelect={(id : number) => { locManager.setSelectedLocId(id); locManager.setGpsData(null); setIsDropdownOpen(false); }} 
-                  onClose={() => setIsDropdownOpen(false)} 
-              />
+
+            <View style={styles.islandContainer}>
+              <View style={styles.labelRow}>
+                <Text style={[styles.inputLabel, { marginTop: 0, marginBottom: 0 }]}>Job Tags</Text>
+                <TouchableOpacity onPress={() => openInfoModal("Job Tags", "Add tags to categorize your job. This helps workers find your posting more easily.")} style={styles.infoIconContainer}>
+                  <InfoIcon size={18} color="#71717a" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.skillsContainer}>
+                {selectedCategories.map((cat) => (
+                  <TouchableOpacity key={cat.id} style={styles.skillPillEdit} onPress={() => handleRemoveCategory(cat.id)}>
+                    <Text style={styles.skillPillText}>{cat.name}</Text>
+                    <X size={14} color="#d8b4fe" style={{ marginLeft: 6 }} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <TouchableOpacity 
+                style={styles.dropdownTrigger} 
+                onPress={() => setIsCategoryModalVisible(true)}
+              >
+                <Text style={styles.dropdownTriggerText}>Select a Tag...</Text>
+                <ChevronDown size={20} color="#71717a" />
+              </TouchableOpacity>
+            </View>
 
               <InfoModal
                   isVisible={infoModalData.visible} 
@@ -297,7 +343,15 @@ export default function PostScreen() {
                   onClose={() => setIsMapModalOpen(false)} onConfirm={confirmMapLocation} 
               />
 
-              <TouchableOpacity style={styles.primaryButton} onPress={() => handlePostJob(selectedCurrency.code)} disabled={isSubmitting}>
+              <CategorySelectModal
+                visible={isCategoryModalVisible}
+                onClose={() => setIsCategoryModalVisible(false)}
+                categories={availableCategories}
+                selectedCategories={selectedCategories}
+                onSelectCategory={handleSelectCategory}
+              />
+
+              <TouchableOpacity style={styles.primaryButton} onPress={() => handlePostJob(selectedCurrency.code, selectedCategories)} disabled={isSubmitting}>
                 {isSubmitting ? (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                     <ActivityIndicator color="white" />
@@ -350,5 +404,11 @@ export const styles = StyleSheet.create({
   searchBarContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#09090b', borderRadius: 10, paddingHorizontal: 12, margin: 10, borderWidth: 1, borderColor: '#27272a' },
   searchInput: { flex: 1, color: 'white', padding: 10, fontSize: 14 },
   currencyOption: { paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#27272a' },
-  currencyOptionText: { color: 'white', textAlign: 'center', fontSize: 16 }
+  currencyOptionText: { color: 'white', textAlign: 'center', fontSize: 16 },
+
+  skillsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, width: '100%' },
+  skillPillEdit: { backgroundColor: 'rgba(139, 92, 246, 0.25)', paddingVertical: 8, paddingLeft: 14, paddingRight: 10, borderRadius: 20, borderWidth: 1, borderColor: '#8b5cf6', flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  skillPillText: { color: '#d8b4fe', fontWeight: '600', fontSize: 14 },
+  dropdownTrigger: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#000', paddingHorizontal: 15, paddingVertical: 14, borderRadius: 8, borderWidth: 1, borderColor: '#3f3f46', marginTop: 5, width: '100%' },
+  dropdownTriggerText: { color: '#a1a1aa', fontSize: 14 },
 });

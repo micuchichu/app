@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Modal, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Modal, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Briefcase, User, Users, ChevronRight, X, Info, Bookmark, Send } from 'lucide-react-native';
+import { Briefcase, Users, ChevronRight, X, Info, Heart, Send, Trash2 } from 'lucide-react-native';
 
 import { supabase } from '@/app/lib/supabase';
 import { Colors } from '@/app/constants/colors';
@@ -141,6 +141,36 @@ export default function DashboardScreen() {
     }
   };
 
+  const handleDeleteJob = (jobId: string) => {
+    Alert.alert(
+      "Delete Job",
+      "Are you sure you want to delete this job posting? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Delete", 
+          style: "destructive", 
+          onPress: async () => {
+            try {
+              await supabase.from('job_postings_candidates').delete().eq('job_id', jobId);
+              await supabase.from('job_postings_categories').delete().eq('job_id', jobId);
+              await supabase.from('job_saves').delete().eq('job_posting_id', jobId);
+
+              const { error } = await supabase.from('job_postings').delete().eq('job_id', jobId);
+              
+              if (error) throw error;
+              
+              setPostedJobs(prev => prev.filter(j => j.id !== jobId));
+              showAlert("Success", "Job deleted successfully.");
+            } catch (error: any) {
+              showAlert("Error", error.message);
+            }
+          } 
+        }
+      ]
+    );
+  };
+
   const handleAcceptApplicant = async (applicantId: string) => {
     if (!selectedJob) return;
 
@@ -253,7 +283,7 @@ export default function DashboardScreen() {
             {activeTab === 'posted' ? (
               <Briefcase size={18} color={Colors.primary} />
             ) : activeTab === 'saved' ? (
-              <Bookmark size={18} color={Colors.primary} fill={Colors.primary} />
+              <Heart size={18} color={Colors.primary} fill={Colors.primary} />
             ) : (
               <Send size={18} color={Colors.primary} />
             )}
@@ -282,12 +312,23 @@ export default function DashboardScreen() {
           </Text>
           <View style={styles.actionRowList}>
             {activeTab === 'posted' && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 5 }}>
-                <Users size={14} color={Colors.primary} style={{ marginRight: 4 }} />
-                <Text style={{ color: Colors.textMuted, fontSize: 13, fontWeight: 'bold' }}>
-                  {item.job_postings_candidates?.length || 0}
-                </Text>
-              </View>
+              <>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 10 }}>
+                  <Users size={14} color={Colors.primary} style={{ marginRight: 4 }} />
+                  <Text style={{ color: Colors.textMuted, fontSize: 13, fontWeight: 'bold' }}>
+                    {item.job_postings_candidates?.length || 0}
+                  </Text>
+                </View>
+
+                <TouchableOpacity 
+                  style={styles.deleteButton}
+                  onPress={(e) => {
+                    handleDeleteJob(item.id);
+                  }}
+                >
+                  <Trash2 size={16} color="#ef4444" />
+                </TouchableOpacity>
+              </>
             )}
             <ChevronRight size={18} color={Colors.textMuted} />
           </View>
@@ -335,7 +376,7 @@ export default function DashboardScreen() {
             style={[styles.tab, activeTab === 'saved' && styles.activeTab]} 
             onPress={() => (setActiveTab('saved'), fetchDashboardData())}
           >
-            <Bookmark size={16} color={activeTab === 'saved' ? 'white' : '#a1a1aa'} />
+            <Heart size={16} color={activeTab === 'saved' ? 'white' : '#a1a1aa'} />
             <Text style={[styles.tabText, activeTab === 'saved' && styles.activeTabText]}>Saved</Text>
           </TouchableOpacity>
         </View>
@@ -349,7 +390,7 @@ export default function DashboardScreen() {
             ) : activeTab === 'applied' ? (
               <Send size={48} color={Colors.textMuted} />
             ) : (
-              <Bookmark size={48} color={Colors.textMuted} />
+              <Heart size={48} color={Colors.textMuted} />
             )}
             <Text style={styles.emptyText}>
               {activeTab === 'posted' ? "You haven't posted any jobs yet." : 
@@ -414,8 +455,8 @@ const styles = StyleSheet.create({
   headerTitle: { color: 'white', fontSize: 32, fontWeight: 'bold' },
   subHeader: { color: Colors.textMuted, fontSize: 14 },
   
-  tabContainer: { flexDirection: 'row', backgroundColor: '#18181b', borderRadius: 12, padding: 4, marginBottom: 20, borderWidth: 1, borderColor: '#27272a' },
-  tab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 8, gap: 6 },
+  tabContainer: { flexDirection: 'row', backgroundColor: '#18181b', borderRadius: 12, padding: 4, marginBottom: 10, borderWidth: 1, borderColor: '#27272a' },
+  tab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 8, gap: 6 },
   activeTab: { backgroundColor: '#27272a' },
   tabText: { color: '#a1a1aa', fontSize: 13, fontWeight: '600' },
   activeTabText: { color: 'white' },
@@ -435,6 +476,8 @@ const styles = StyleSheet.create({
   jobCardListFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: Colors.surfaceHighlight || '#27272a', paddingTop: 15 },
   payTextList: { color: Colors.textSubtle, fontSize: 14, fontWeight: '600' },
   actionRowList: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+
+  deleteButton: { backgroundColor: 'rgba(239, 68, 68, 0.15)', padding: 6, borderRadius: 8, marginRight: 5 },
 
   modalContainer: { flex: 1, backgroundColor: Colors.background || 'black', padding: 20 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 25, marginTop: Platform.OS === 'ios' ? 10 : 40 },

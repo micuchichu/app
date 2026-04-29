@@ -20,9 +20,10 @@ const VISIBLE_POSITION = SCREEN_HEIGHT - SHEET_HEIGHT - 20;
 interface CreateGigModalProps {
   visible: boolean;
   onClose: () => void;
+  serviceToEdit?: any | null; 
 }
 
-export function CreateGigModal({ visible, onClose }: CreateGigModalProps) {
+export function CreateGigModal({ visible, onClose, serviceToEdit }: CreateGigModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
@@ -35,6 +36,20 @@ export function CreateGigModal({ visible, onClose }: CreateGigModalProps) {
 
   useEffect(() => {
     if (visible) {
+      if (serviceToEdit) {
+        setTitle(serviceToEdit.title || '');
+        setDescription(serviceToEdit.description || '');
+        setPrice(serviceToEdit.price ? String(serviceToEdit.price) : '');
+        if (serviceToEdit.currencies?.currency_text) {
+          setSelectedCurrency({
+            code: serviceToEdit.currencies.currency_text.trim(),
+            symbol: ''
+          });
+        }
+      } else {
+        resetForm();
+      }
+
       Animated.spring(panY, {
         toValue: VISIBLE_POSITION,
         useNativeDriver: true,
@@ -43,7 +58,7 @@ export function CreateGigModal({ visible, onClose }: CreateGigModalProps) {
     } else {
       panY.setValue(HIDDEN_POSITION);
     }
-  }, [visible]);
+  }, [visible, serviceToEdit]);
 
   const closeSheet = () => {
     Animated.timing(panY, {
@@ -60,6 +75,7 @@ export function CreateGigModal({ visible, onClose }: CreateGigModalProps) {
     setTitle('');
     setDescription('');
     setPrice('');
+    setSelectedCurrency(getDefaultCurrency());
   };
 
   const panResponder = useRef(
@@ -108,17 +124,31 @@ export function CreateGigModal({ visible, onClose }: CreateGigModalProps) {
             .ilike('currency_text', selectedCurrency.code.trim().toUpperCase()) 
             .maybeSingle(); 
 
-      const { error } = await supabase.from('service_postings').insert({
+      const payload = {
         employee_id: user.id,
         title: title.trim(),
         description: description.trim(),
         price: parsedPrice,
         currency_id: currencyData?.currency_id || null
-      });
+      };
+
+      if (serviceToEdit) {
+        const { error } = await supabase
+          .from('service_postings') 
+          .update(payload)
+          .eq('id', serviceToEdit.id);
+        
+        if (error) throw error;
+        showAlert("Success", "Your service has been updated!");
+      } else {
+        const { error } = await supabase
+          .from('service_postings') 
+          .insert(payload);
+        
+        if (error) throw error;
+        showAlert("Success", "Your service has been posted!");
+      }
       
-      if (error) throw error;
-      
-      showAlert("Success", "Your service has been posted!");
       closeSheet();
     } catch (error: any) {
       showAlert("Error", error.message);
@@ -126,6 +156,8 @@ export function CreateGigModal({ visible, onClose }: CreateGigModalProps) {
       setIsSubmitting(false);
     }
   };
+
+  const isEditing = !!serviceToEdit;
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={closeSheet}>
@@ -144,14 +176,16 @@ export function CreateGigModal({ visible, onClose }: CreateGigModalProps) {
             </View>
 
             <View style={styles.header}>
-              <Text style={styles.headerTitle}>Offer a Service</Text>
+              <Text style={styles.headerTitle}>{isEditing ? "Edit Service" : "Offer a Service"}</Text>
               <TouchableOpacity style={styles.closeBtn} onPress={closeSheet}>
                 <X size={22} color="#a1a1aa" />
               </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-              <Text style={styles.subtitle}>Create a listing for a skill you can offer to others.</Text>
+              <Text style={styles.subtitle}>
+                {isEditing ? "Update the details of your service listing." : "Create a listing for a skill you can offer to others."}
+              </Text>
 
               <Text style={styles.label}>Service Title</Text>
               <TextInput
@@ -196,7 +230,7 @@ export function CreateGigModal({ visible, onClose }: CreateGigModalProps) {
                 {isSubmitting ? <ActivityIndicator color="white" /> : (
                   <>
                     <CheckCircle size={20} color="white" style={{ marginRight: 8 }} />
-                    <Text style={styles.submitBtnText}>Publish Service</Text>
+                    <Text style={styles.submitBtnText}>{isEditing ? "Update Service" : "Publish Service"}</Text>
                   </>
                 )}
               </TouchableOpacity>

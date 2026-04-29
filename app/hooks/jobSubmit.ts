@@ -4,6 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
 import { uploadMediaToSupabase } from '../lib/mediaUpload';
 import { useAlert } from '@/app/components/alertContext';
+import { JobCategory } from '@/app/components/categorySelectModal';
 
 export const useJobSubmit = (locManager: any) => {
     const [title, setTitle] = useState('');
@@ -19,7 +20,7 @@ export const useJobSubmit = (locManager: any) => {
     const [uploadStatus, setUploadStatus] = useState('');
     const { showAlert } = useAlert();
 
-    const handlePostJob = async (selectedCurrencyCode: string) => {
+    const handlePostJob = async (selectedCurrencyCode: string, categories: JobCategory[] = []) => {
         if (!title || !payAmount || !description || (!locManager.selectedLocId && !locManager.gpsData)) {
             showAlert("Missing Info", "Please fill out all required fields and set a location.");
             return;
@@ -119,16 +120,15 @@ export const useJobSubmit = (locManager: any) => {
         }
 
         const cleanPay = parseFloat(payAmount.replace(/[^0-9.]/g, ''));
-        const { error: jobError } = await supabase.from('job_postings').insert([{
+        
+        const { data: newJob, error: jobError } = await supabase.from('job_postings').insert([{
             employer_id: user.id, 
             title, 
             description,
             work_mode: workMode.toLowerCase(),
             schedule_type: scheduleType.toLowerCase(), 
             pay_amount: isNaN(cleanPay) ? 0 : cleanPay,
-            
             currency_id: finalCurrencyId,
-            
             is_negotiable: isNegotiable, 
             people_needed: parseInt(peopleNeeded) || 1, 
             is_sponsored: false, 
@@ -136,17 +136,45 @@ export const useJobSubmit = (locManager: any) => {
             thumbnail_url: finalThumbnailUrl,
             video_url: finalVideoUrl,
             job_location_id: finalLocationId 
-        }]);
+        }]).select('*').single();
+
+        if (jobError) {
+            showAlert("Database Error", jobError.message);
+            setIsSubmitting(false);
+            setUploadStatus('');
+            return;
+        }
+
+        const returnedJob = newJob as any;
+        const insertedJobId = returnedJob?.job_id || returnedJob?.id || returnedJob?.posting_id;
+
+        if (categories.length > 0 && insertedJobId) {
+            setUploadStatus('Saving tags...');
+            
+            const categoryInserts = categories.map((cat) => ({
+                job_id: insertedJobId, 
+                category_id: cat.id
+            }));
+
+            const { error: categoryError } = await supabase
+                .from('job_postings_categories')
+                .insert(categoryInserts);
+
+            if (categoryError) {
+                console.error("Failed to save categories: ", categoryError);
+            }
+        }
 
         setIsSubmitting(false);
         setUploadStatus('');
-
-        if (jobError) showAlert("Database Error", jobError.message);
-        else {
-            showAlert("Success!", "Your job has been posted.");
-            setTitle(''); setPayAmount(''); setDescription(''); setMedia(null);
-            locManager.setSelectedLocId(null); locManager.setGpsData(null);
-        }
+        showAlert("Success!", "Your job has been posted.");
+        
+        setTitle(''); 
+        setPayAmount(''); 
+        setDescription(''); 
+        setMedia(null);
+        locManager.setSelectedLocId(null); 
+        locManager.setGpsData(null);
     };
 
     return {

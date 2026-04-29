@@ -22,7 +22,7 @@ interface JobsMapModalProps {
 
 export const JobsMapModal = ({ visible, onClose }: JobsMapModalProps) => {
   const mapRef = useRef<MapView>(null);
-  const [mapRegion, setMapRegion] = useState({ latitude: 37.78825, longitude: -122.4324, latitudeDelta: 0.1, longitudeDelta: 0.1 });
+  const [mapRegion, setMapRegion] = useState({ latitude: 44.4267, longitude: 26.1024, latitudeDelta: 0.1, longitudeDelta: 0.1 });
   const [zoomDelta, setZoomDelta] = useState(0.1); 
   
   const [allJobs, setAllJobs] = useState<any[]>([]); 
@@ -65,6 +65,7 @@ export const JobsMapModal = ({ visible, onClose }: JobsMapModalProps) => {
   };
 
   const getDistanceInKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    // funny math
     const R = 6371;
     const dLat = (lat2 - lat1) * (Math.PI / 180);
     const dLon = (lon2 - lon1) * (Math.PI / 180);

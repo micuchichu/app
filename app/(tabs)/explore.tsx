@@ -149,7 +149,7 @@ export default function ExploreScreen() {
         .select(`
           *,
           currencies ( currency_text ),
-          employees ( rating, profiles ( full_name ) )
+          employees ( rating, profiles ( full_name, phone_number, email ) )
         `)
         .order('created_at', { ascending: false });
 
@@ -230,7 +230,7 @@ export default function ExploreScreen() {
 
     return (
       <TouchableOpacity 
-        style={styles.gridCard} 
+        style={[styles.gridCard, isService && styles.serviceGridCard]} 
         onPress={() => {
            if (isService) {
               setSelectedService(item);
@@ -239,9 +239,13 @@ export default function ExploreScreen() {
            }
         }}
       >
-        <Image source={imageSource} style={styles.gridCardImage} />
-        
-        <View style={styles.gridCardOverlay} />
+        {/* Only render the image and overlay if it is a job */}
+        {!isService && (
+          <>
+            <Image source={imageSource} style={styles.gridCardImage} />
+            <View style={styles.gridCardOverlay} />
+          </>
+        )}
 
         <View style={styles.gridCardContent}>
           <View style={styles.gridCardTop}>
@@ -254,12 +258,12 @@ export default function ExploreScreen() {
           
           <View style={styles.gridCardBottom}>
             {isService && (
-                <Text style={{ color: '#4ade80', fontSize: 12, fontWeight: 'bold', marginBottom: 2 }}>
+                <Text style={{ color: '#4ade80', fontSize: 13, fontWeight: 'bold', marginBottom: 4 }}>
                     {item.price} {item.currencies?.currency_text || ''}
                 </Text>
             )}
-            <Text style={styles.gridCardTitle} numberOfLines={2}>{item.title}</Text>
-            <Text style={styles.gridCardEmployer} numberOfLines={1}>@{creatorName.replace(/\s+/g, '').toLowerCase()}</Text>
+            <Text style={[styles.gridCardTitle, isService && styles.noTextShadow]} numberOfLines={2}>{item.title}</Text>
+            <Text style={[styles.gridCardEmployer, isService && styles.noTextShadow]} numberOfLines={1}>@{creatorName.replace(/\s+/g, '').toLowerCase()}</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -487,6 +491,7 @@ const styles = StyleSheet.create({
   row: { justifyContent: 'space-between', marginBottom: 15, },
 
   gridCard: { width: '48%', aspectRatio: 0.75, borderRadius: 12, backgroundColor: '#18181b', overflow: 'hidden', borderWidth: 1, borderColor: '#27272a' },
+  serviceGridCard: { backgroundColor: '#1d1d1d', borderColor: '#3f3f46' }, 
   gridCardImage: { width: '100%', height: '100%', position: 'absolute', resizeMode: 'cover', },
   gridCardOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.35)', },
   gridCardContent: { flex: 1, justifyContent: 'space-between', padding: 10, },
@@ -495,6 +500,7 @@ const styles = StyleSheet.create({
   gridCardBottom: { justifyContent: 'flex-end', },
   gridCardTitle: { color: 'white', fontSize: 14, fontWeight: 'bold', marginBottom: 4, textShadowColor: 'rgba(0,0,0,0.9)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4, },
   gridCardEmployer: { color: '#d4d4d8', fontSize: 12, fontWeight: '500', textShadowColor: 'rgba(0,0,0,0.9)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4, },
+  noTextShadow: { textShadowColor: 'transparent', textShadowRadius: 0 },
 
   payBadgeSmall: { backgroundColor: '#27272a', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, overlayColor: 'rgba(0,0,0,0.6)', marginBottom: 6 },
   payBadgeTextSmall: { color: 'white', fontWeight: 'bold', fontSize: 12,},

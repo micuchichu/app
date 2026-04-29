@@ -73,9 +73,13 @@ export const ScrollableJobs = ({ jobs, userId, isLoading = false, onRefresh, ini
       });
 
     if (error) {
-      if (error.code === '23505') {
+      if(userId == job.employers?.id) {
+        showAlert('Error', 'You cannot apply to your own job posting.');
+      }
+      else if (error.code === '23505') {
         showAlert('Already Applied', 'You have already submitted an application for this job.');
-      } else {
+      }
+      else {
         console.error("Apply error:", error);
         showAlert('Error', 'Could not submit your application. Please try again.');
       }
