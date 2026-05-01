@@ -1,50 +1,117 @@
-# Welcome to your Expo app 👋
+# Workly
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A cross-platform mobile application built with **Expo** and **React Native**, backed by **Supabase**. Workly features authentication, a dashboard, an explore/discovery screen, a social feed, post creation, and user profiles — all in a clean, file-based routing structure powered by Expo Router.
 
-## Get started
+---
+# Test Accounts
 
-1. Install dependencies
+ Email: workly.test1@gmail.com \
+ Password: Workly123! 
 
-   ```bash
-   npm install
-   ```
+---
+## Tech Stack
 
-2. Start the app
+| Layer | Technology |
+|---|---|
+| Framework | Expo ~54 / React Native 0.81 |
+| Language | TypeScript 5.9 |
+| Routing | Expo Router (file-based) |
+| Backend / Auth | Supabase |
+| Navigation | React Navigation (bottom tabs, stack, material top tabs) |
+| Maps | React Native Maps + Google Maps |
+| Animations | React Native Reanimated 4 |
+| Lists | Shopify Flash List |
+| Icons | Expo Vector Icons, Lucide React Native |
+| Build | EAS Build |
 
-   ```bash
-   npx expo start
-   ```
+---
 
-In the output, you'll find options to open the app in a
+## Database Schema
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+![Database Schema](./assets/Database.jpeg)
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+---
 
-## Get a fresh project
+## Project Structure
+```
+app/
+├── (tabs)/
+│ ├── dashboard.tsx # Main dashboard screen
+│ ├── explore.tsx # Discover/search screen
+│ ├── feed.tsx # Social activity feed
+│ ├── post.tsx # Create a post
+│ └── profile.tsx # User profile
+├── auth/ # Auth-related screens/logic
+├── components/ # Shared UI components
+├── constants/ # App-wide constants
+├── hooks/ # Custom React hooks
+├── lib/ # Supabase client & utilities
+├── login.tsx # Login screen
+├── signup.tsx # Sign-up screen
+└── verifyEmail.tsx # Email verification screen
+assets/ # Icons, images, splash
+supabase/ # Supabase config / migrations
+```
+---
 
-When you're ready, run:
+## Getting Started
 
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) (LTS recommended)
+- [Expo CLI](https://docs.expo.dev/get-started/installation/)
+- An [Expo](https://expo.dev/) account (for EAS builds)
+- A [Supabase](https://supabase.com/) project
+
+### Installation
+https://github.com/micuchichu/app/releases/tag/v1.0 
+
+Or build it yourself:
 ```bash
-npm run reset-project
+git clone https://github.com/micuchichu/app.git
+cd app
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### Environment Variables
 
-## Learn more
+Create a `.env` file in the root:
 
-To learn more about developing your project with Expo, look at the following resources:
+```env
+EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### Running the App
 
-## Join the community
+```bash
+# Start Expo dev server
+npx expo start
 
-Join our community of developers creating universal apps.
+# Run on Android
+npx expo run:android
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+# Run on iOS
+npm run ios
+
+```
+
+---
+
+## Building for Production
+
+This project uses [EAS Build](https://docs.expo.dev/build/introduction/).
+
+```bash
+npm install -g eas-cli
+
+eas build --platform android
+eas build --platform ios
+```
+--- 
+## Showcase
+
+Check out these short demos of the app in action:
+
+[![Workly Pitch](https://img.youtube.com/vi/eSvYA3ZIK8c/0.jpg)](https://youtube.com/shorts/K6pysQxXq-k?feature=share)
+[![Workly Demo](https://img.youtube.com/vi/rauKAnaPsD4/0.jpg)](https://youtube.com/shorts/rauKAnaPsD4)
