@@ -58,7 +58,9 @@ supabase/ # Supabase config / migrations
 - A [Supabase](https://supabase.com/) project
 
 ### Installation
+https://github.com/micuchichu/app/releases/tag/v1.0 
 
+Or build it yourself:
 ```bash
 git clone https://github.com/micuchichu/app.git
 cd app
@@ -78,16 +80,14 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 ```bash
 # Start Expo dev server
-npm start
+npx expo start
 
 # Run on Android
-npm run android
+npx expo run:android
 
 # Run on iOS
 npm run ios
 
-# Run in browser
-npm run web
 ```
 
 ---
@@ -102,19 +102,10 @@ npm install -g eas-cli
 eas build --platform android
 eas build --platform ios
 ```
+--- 
+## Showcase
 
----
+Check out these short demos of the app in action:
 
-## Features
-
-- **Authentication** — Sign up, log in, email verification via Supabase Auth
-- **Dashboard** — Personalized home screen with key metrics and activity
-- **Explore** — Discover content and users with search and map support
-- **Feed** — Social feed displaying posts from followed users
-- **Post Creation** — Rich post creation with image/video picker and location support
-- **Profile** — View and edit user profile, avatar upload, and activity history
-- **Localization** — Multi-language support via `expo-localization`
-- **Haptics** — Tactile feedback using `expo-haptics`
-
----
-
+[![Workly Pitch](https://img.youtube.com/vi/eSvYA3ZIK8c/0.jpg)](https://youtube.com/shorts/eSvYA3ZIK8c)
+[![Workly Demo](https://img.youtube.com/vi/rauKAnaPsD4/0.jpg)](https://youtube.com/shorts/rauKAnaPsD4)
