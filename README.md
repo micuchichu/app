@@ -26,6 +26,12 @@ A cross-platform mobile application built with **Expo** and **React Native**, ba
 
 ---
 
+## Database Schema
+
+![Database Schema](./assets/Database.jpeg)
+
+---
+
 ## Project Structure
 ```
 app/
