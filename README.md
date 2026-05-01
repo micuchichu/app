@@ -113,5 +113,5 @@ eas build --platform ios
 
 Check out these short demos of the app in action:
 
-[![Workly Pitch](https://img.youtube.com/vi/eSvYA3ZIK8c/0.jpg)](https://youtube.com/shorts/eSvYA3ZIK8c)
+[![Workly Pitch](https://img.youtube.com/vi/eSvYA3ZIK8c/0.jpg)](https://youtube.com/shorts/K6pysQxXq-k?feature=share)
 [![Workly Demo](https://img.youtube.com/vi/rauKAnaPsD4/0.jpg)](https://youtube.com/shorts/rauKAnaPsD4)
