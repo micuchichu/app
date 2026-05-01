@@ -149,7 +149,15 @@ export default function JobCard({ item, onApply, userId, isActive }: { item: Job
       <View style={styles.topBlackBar} />
 
       {item.video_url ? (
-        <VideoView key={`video-${item.id}`} player={player} style={styles.bgImage} contentFit="cover" fullscreenOptions={{enable: true}} nativeControls={false} />
+        <VideoView 
+          key={`video-${item.id}`} 
+          player={player} 
+          style={styles.bgImage} 
+          contentFit="cover" 
+          fullscreenOptions={{enable: true}} 
+          nativeControls={false} 
+          muted={true}
+          />
       ) : (
         <Image source={item.thumbnail_url ? { uri: item.thumbnail_url } : fallbackImage} style={styles.bgImage} />
       )}

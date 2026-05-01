@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Modal, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Briefcase, Users, ChevronRight, X, Info, Heart, Send, Trash2 } from 'lucide-react-native';
+import { Briefcase, Users, ChevronRight, X, Info, Heart, Send, Trash2, Star } from 'lucide-react-native';
 
 import { supabase } from '@/app/lib/supabase';
 import { Colors } from '@/app/constants/colors';
@@ -16,6 +16,7 @@ import { useAlert } from '../components/alertContext';
 
 interface MyJob {
   id: string; 
+  employer_id?: string; 
   title: string;
   pay_amount: number;
   currencies?: { currency_text: string } | null; 
@@ -44,6 +45,9 @@ export default function DashboardScreen() {
 
   const [selectedApplicantProfile, setSelectedApplicantProfile] = useState<Applicant | null>(null);
   const [isInfoModalOpen, setInfoModalOpen] = useState(false);
+
+  const [jobToRate, setJobToRate] = useState<MyJob | null>(null);
+  const [selectedRating, setSelectedRating] = useState<number>(0);
 
   const { showAlert } = useAlert();
 
@@ -224,21 +228,23 @@ export default function DashboardScreen() {
         .from('employees')
         .select('rating')
         .eq('id', applicantId)
-        .single();
+        .maybeSingle();
 
       if (fetchError) throw fetchError;
 
       const currentRating = employeeData?.rating || 0;
-
       let finalRating = newScore;
+      
       if (currentRating > 0) {
         finalRating = ((currentRating * 9) + newScore) / 10;
       }
 
       const { error: updateError } = await supabase
         .from('employees')
-        .update({ rating: finalRating })
-        .eq('id', applicantId);
+        .upsert({ 
+          id: applicantId,
+          rating: finalRating 
+        });
 
       if (updateError) throw updateError;
 
@@ -261,6 +267,50 @@ export default function DashboardScreen() {
     } catch (error: any) {
       showAlert("Error", error.message);
     }
+  };
+
+  const handleRateEmployer = async () => {
+    if (!jobToRate?.employer_id || selectedRating === 0) {
+      showAlert("Error", "Please select a rating.");
+      return;
+    }
+
+    try {
+      const { data: empData, error: fetchError } = await supabase
+        .from('employers')
+        .select('rating')
+        .eq('id', jobToRate.employer_id)
+        .maybeSingle();
+
+      if (fetchError) throw fetchError;
+
+      const currentRating = empData?.rating || 0;
+      let finalRating = selectedRating;
+      
+      if (currentRating > 0) {
+        finalRating = ((currentRating * 9) + selectedRating) / 10;
+      }
+
+      const { error: updateError } = await supabase
+        .from('employers')
+        .upsert({ 
+          id: jobToRate.employer_id,
+          rating: finalRating 
+        });
+
+      if (updateError) throw updateError;
+
+      showAlert("Success", "Thank you for rating this employer!");
+      setJobToRate(null);
+      setSelectedRating(0);
+    } catch (error: any) {
+      showAlert("Error", error.message);
+    }
+  };
+
+  const closeRatingModal = () => {
+    setJobToRate(null);
+    setSelectedRating(0);
   };
 
   const getStatusColor = (status?: string) => {
@@ -330,6 +380,17 @@ export default function DashboardScreen() {
                 </TouchableOpacity>
               </>
             )}
+
+            {activeTab === 'applied' && item.application_status?.toLowerCase() === 'accepted' && (
+              <TouchableOpacity 
+                style={styles.rateButton}
+                onPress={() => setJobToRate(item)}
+              >
+                <Star size={14} color="#fbbf24" fill="#fbbf24" style={{ marginRight: 4 }} />
+                <Text style={styles.rateButtonText}>Rate</Text>
+              </TouchableOpacity>
+            )}
+
             <ChevronRight size={18} color={Colors.textMuted} />
           </View>
         </View>
@@ -410,6 +471,39 @@ export default function DashboardScreen() {
         )}
       </View>
 
+      <Modal visible={!!jobToRate} transparent animationType="fade" onRequestClose={closeRatingModal}>
+        <View style={styles.overlay}>
+          <View style={styles.ratingModalCard}>
+            <Text style={styles.ratingModalTitle}>Rate Employer</Text>
+            <Text style={styles.ratingModalSub}>How was your experience working with them?</Text>
+            
+            <View style={styles.starsRow}>
+              {[1, 2, 3, 4, 5].map(star => (
+                <TouchableOpacity key={star} onPress={() => setSelectedRating(star)}>
+                  <Star 
+                    size={36} 
+                    color={star <= selectedRating ? "#fbbf24" : "#3f3f46"} 
+                    fill={star <= selectedRating ? "#fbbf24" : "transparent"} 
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity 
+              style={[styles.submitRateBtn, selectedRating === 0 && { opacity: 0.5 }]} 
+              onPress={handleRateEmployer}
+              disabled={selectedRating === 0}
+            >
+              <Text style={styles.submitRateText}>Submit Rating</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.cancelRateBtn} onPress={closeRatingModal}>
+              <Text style={styles.cancelRateText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <ApplicantReviewModal 
         visible={!!selectedJob}
         onClose={() => setSelectedJob(null)}
@@ -478,6 +572,18 @@ const styles = StyleSheet.create({
   actionRowList: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 
   deleteButton: { backgroundColor: 'rgba(239, 68, 68, 0.15)', padding: 6, borderRadius: 8, marginRight: 5 },
+
+  rateButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(251, 191, 36, 0.15)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, marginRight: 5 },
+  rateButtonText: { color: '#fbbf24', fontSize: 12, fontWeight: 'bold' },
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  ratingModalCard: { backgroundColor: '#18181b', borderRadius: 20, padding: 25, width: '100%', alignItems: 'center', borderWidth: 1, borderColor: '#27272a' },
+  ratingModalTitle: { color: 'white', fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
+  ratingModalSub: { color: '#a1a1aa', fontSize: 14, textAlign: 'center', marginBottom: 25 },
+  starsRow: { flexDirection: 'row', gap: 15, marginBottom: 30 },
+  submitRateBtn: { backgroundColor: Colors.primary || '#8b5cf6', paddingVertical: 14, paddingHorizontal: 20, borderRadius: 12, width: '100%', alignItems: 'center', marginBottom: 10 },
+  submitRateText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
+  cancelRateBtn: { paddingVertical: 14, paddingHorizontal: 20, borderRadius: 12, backgroundColor: '#27272a', width: '100%', alignItems: 'center' },
+  cancelRateText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
 
   modalContainer: { flex: 1, backgroundColor: Colors.background || 'black', padding: 20 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 25, marginTop: Platform.OS === 'ios' ? 10 : 40 },

@@ -159,6 +159,35 @@ export default function ProfileScreen() {
       const idsToDelete = initialCategoryIds.filter(id => !finalCategoryIds.includes(id));
       const idsToInsert = finalCategoryIds.filter(id => !initialCategoryIds.includes(id));
 
+      const { data: existingEmployee, error: empFetchError } = await supabase
+      .from('employees')
+      .select('id')
+      .eq('id', user.id) 
+      .maybeSingle();
+
+      if (empFetchError) {
+        showAlert("Database Error", "Could not verify your profile. Please try again.");
+        return;
+      }
+
+      if (!existingEmployee) {
+        const { error: insertEmpError } = await supabase
+          .from('employees')
+          .insert([{ 
+            id: user.id, 
+            rating: 0, 
+            looking_for_job: true, 
+            active_user: true, 
+            jobs_done: 0 
+          }]); 
+
+        if (insertEmpError) {
+          console.error("Employee creation error:", insertEmpError);
+          showAlert("Profile Error", "Could not initialize your worker profile.");
+          return;
+        }
+      }
+
       if (idsToDelete.length > 0) {
         const { error: deleteError } = await supabase
           .from('employee_job_categories')

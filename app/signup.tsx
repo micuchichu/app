@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { AsYouType, isValidPhoneNumber } from 'libphonenumber-js';
-import { ArrowLeft, ArrowRight, CalendarIcon, Check, ChevronDown, MapIcon } from 'lucide-react-native';
+import { ArrowLeft, ArrowRight, CalendarIcon, Check, ChevronDown, MapIcon, X } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Image, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -9,6 +9,7 @@ import { supabase } from './lib/supabase';
 import { CountryPickerModal } from './components/countryPickerModal';
 import { DatePickerModal } from './components/datePickerModal';
 import { MapPickerModal } from './components/mapPickerModal';
+import { CategorySelectModal, JobCategory } from '@/app/components/categorySelectModal';
 import { useLocationManager } from './hooks/locationManager';
 import { CountryRecord, useSignupData } from './hooks/signupData';
 import { useAlert } from '@/app/components/alertContext';
@@ -44,7 +45,9 @@ export default function SignupScreen() {
   const [mapRegion, setMapRegion] = useState({ latitude: 37.78825, longitude: -122.4324, latitudeDelta: 0.0922, longitudeDelta: 0.0421 });
   
   const [currentJob, setCurrentJob] = useState('');
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  
+  const [selectedCategories, setSelectedCategories] = useState<JobCategory[]>([]);
+  const [isCategoryModalVisible, setIsCategoryModalVisible] = useState(false);
 
   useEffect(() => {
     if (countryList.length > 0 && !selectedCountry) setSelectedCountry(countryList[0]);
@@ -95,7 +98,7 @@ export default function SignupScreen() {
     if (step === 3) {
       setTouched(prev => ({ ...prev, currentJob: true }));
       if (currentJob.trim().length === 0) return false;
-      if (selectedTags.length === 0) { showAlert("Required", "Please select at least one skill."); return false; }
+      if (selectedCategories.length === 0) { showAlert("Required", "Please select at least one skill."); return false; }
     }
     return true;
   };
@@ -114,12 +117,19 @@ export default function SignupScreen() {
     }
   };
 
-  const toggleTag = (skillName: string) => {
-    if (selectedTags.includes(skillName)) setSelectedTags(selectedTags.filter(t => t !== skillName));
-    else {
-      if (selectedTags.length >= 5) return showAlert("Limit Reached", "Max 5 skills allowed.");
-      setSelectedTags([...selectedTags, skillName]);
+  const handleSelectCategory = (category: JobCategory) => {
+    if (!selectedCategories.find(c => c.id === category.id)) {
+      if (selectedCategories.length >= 5) {
+        showAlert("Limit Reached", "Max 5 skills allowed.");
+      } else {
+        setSelectedCategories([...selectedCategories, category]);
+      }
     }
+    setIsCategoryModalVisible(false);
+  };
+
+  const handleRemoveCategory = (categoryId: number) => {
+    setSelectedCategories(selectedCategories.filter(c => c.id !== categoryId));
   };
 
   const handleDateChange = (selectedDate: Date) => {
@@ -187,8 +197,45 @@ export default function SignupScreen() {
 
       if (profileError) throw profileError;
 
-      showAlert('Welcome!', 'Account created successfully.');
-      router.replace('/(tabs)/profile');
+      const { error: employeeError } = await supabase
+        .from('employees')
+        .insert([{
+          id: userId,
+          rating: 0,
+          looking_for_job: true,
+          active_user: true,
+          jobs_done: 0
+        }]);
+
+      if (employeeError) throw employeeError;
+
+      const { error: employerError } = await supabase
+        .from('employers')
+        .insert([{
+          id: userId,
+          rating: 0,
+          verified: false
+        }]);
+
+      if (employerError) throw employerError;
+
+      if (selectedCategories.length > 0) {
+        const categoryInserts = selectedCategories.map(c => ({
+          employee_id: userId,
+          category_id: c.id
+        }));
+
+        const { error: catError } = await supabase
+          .from('employee_job_categories')
+          .insert(categoryInserts);
+          
+        if (catError) throw catError;
+      }
+
+      router.replace({ 
+        pathname: '/verifyEmail', 
+        params: { email: email.trim() } 
+      });
 
     } catch (error: any) {
       console.error("Signup Error:", error);
@@ -238,7 +285,7 @@ export default function SignupScreen() {
               onPress={() => { setShowDatePicker(true); markTouched('birthDate'); }}
             >
               <Text style={{ color: hasSelectedDate ? 'white' : '#71717a', fontSize: 20 }}>
-                {hasSelectedDate ? birthDate.toLocaleDateString() : "Birth Date"}
+                {hasSelectedDate ? `${birthDate.getDate().toString().padStart(2, '0')}/${(birthDate.getMonth() + 1).toString().padStart(2, '0')}/${birthDate.getFullYear()}` : "Birth Date"}
               </Text>
               <CalendarIcon size={20} color={hasSelectedDate ? 'white' : '#71717a'} />
             </TouchableOpacity>
@@ -303,18 +350,22 @@ export default function SignupScreen() {
             
             <Text style={[styles.subQuestionText, { marginBottom: 15, marginTop: 15 }]}>Select up to 5 core skills:</Text>
             
-            <View style={styles.pillContainer}>
-              {dbSkills.length > 0 ? (
-                dbSkills.map((skill) => {
-                  const isActive = selectedTags.includes(skill.name);
-                  return (
-                    <TouchableOpacity key={skill.id} style={[styles.pill, isActive && styles.pillActive]} onPress={() => toggleTag(skill.name)} activeOpacity={0.7}>
-                      <Text style={[styles.pillText, isActive && styles.pillTextActive]}>{skill.name}</Text>
-                    </TouchableOpacity>
-                  );
-                })
-              ) : <ActivityIndicator size="small" color="#8b5cf6" />}
+            <View style={styles.skillsContainer}>
+              {selectedCategories.map((skill) => (
+                <TouchableOpacity key={skill.id} style={styles.skillPillEdit} onPress={() => handleRemoveCategory(skill.id)}>
+                  <Text style={styles.skillPillText}>{skill.name}</Text>
+                  <X size={14} color="#d8b4fe" style={{ marginLeft: 6 }} />
+                </TouchableOpacity>
+              ))}
             </View>
+
+            <TouchableOpacity 
+              style={[styles.dropdownTrigger, selectedCategories.length === 0 && touched.currentJob && { borderColor: '#ef4444' }]} 
+              onPress={() => setIsCategoryModalVisible(true)}
+            >
+              <Text style={styles.dropdownTriggerText}>Select a Category...</Text>
+              <ChevronDown size={20} color="#71717a" />
+            </TouchableOpacity>
           </ScrollView>
         );
       default: return null;
@@ -345,6 +396,14 @@ export default function SignupScreen() {
           )}
         </View>
       </KeyboardAvoidingView>
+
+      <CategorySelectModal
+        visible={isCategoryModalVisible}
+        onClose={() => setIsCategoryModalVisible(false)}
+        categories={dbSkills as any}
+        selectedCategories={selectedCategories}
+        onSelectCategory={handleSelectCategory}
+      />
     </SafeAreaView>
   );
 }
@@ -360,11 +419,13 @@ const styles = StyleSheet.create({
   subQuestionText: { color: '#a1a1aa', fontSize: 16, marginBottom: 15 },
   input: { backgroundColor: '#18181b', color: 'white', padding: 20, borderRadius: 15, fontSize: 20, borderWidth: 1, borderColor: '#27272a', fontWeight: '500' },
   errorText: { color: '#ef4444', fontSize: 13, marginTop: 4, marginLeft: 4, fontWeight: '500' },
-  pillContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  pill: { backgroundColor: '#18181b', paddingVertical: 12, paddingHorizontal: 18, borderRadius: 25, borderWidth: 1, borderColor: '#27272a' },
-  pillActive: { backgroundColor: '#8b5cf6', borderColor: '#8b5cf6' },
-  pillText: { color: '#a1a1aa', fontWeight: '600', fontSize: 16 },
-  pillTextActive: { color: 'white' },
+  
+  skillsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, width: '100%' },
+  skillPillEdit: { backgroundColor: 'rgba(139, 92, 246, 0.25)', paddingVertical: 10, paddingLeft: 16, paddingRight: 12, borderRadius: 20, borderWidth: 1, borderColor: '#8b5cf6', flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  skillPillText: { color: '#d8b4fe', fontWeight: '600', fontSize: 16 },
+  dropdownTrigger: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#18181b', paddingHorizontal: 20, paddingVertical: 20, borderRadius: 15, borderWidth: 1, borderColor: '#27272a', marginTop: 5, width: '100%' },
+  dropdownTriggerText: { color: '#71717a', fontSize: 20, fontWeight: '500' },
+
   bottomNav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, paddingBottom: Platform.OS === 'ios' ? 10 : 30, borderTopWidth: 1, borderTopColor: '#27272a', backgroundColor: '#09090b' },
   iconButton: { width: 55, height: 55, borderRadius: 27.5, backgroundColor: '#18181b', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#27272a' },
   nextButton: { flex: 1, flexDirection: 'row', backgroundColor: '#8b5cf6', height: 55, borderRadius: 27.5, justifyContent: 'center', alignItems: 'center', marginLeft: 15 },

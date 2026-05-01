@@ -88,8 +88,10 @@ export const DatePickerModal = ({ visible, date, onClose, onChange }: any) => {
                 onMonthChange={(month: any) => setCurrentMonth(month.dateString)}
                 maxDate={new Date().toISOString().split('T')[0]}
                 enableSwipeMonths={true}
+                firstDay={1} // <-- ADDED: Starts the week on Monday (European standard)
                 onDayPress={(day: any) => {
-                  const selected = new Date(day.timestamp + new Date().getTimezoneOffset() * 60000);
+                  // --- FIXED: Construct a local date directly to bypass Daylight Saving Time offsets ---
+                  const selected = new Date(day.year, day.month - 1, day.day);
                   onChange(selected);
                   onClose();
                 }}
@@ -117,28 +119,11 @@ export const DatePickerModal = ({ visible, date, onClose, onChange }: any) => {
     </Modal>
   );
 };
+
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  centerBox: {
-    backgroundColor: Colors.surface,
-    borderRadius: 20,
-    overflow: 'hidden',
-    paddingBottom: 10,
-    minHeight: 400,
-  },
-  headerControls: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.surfaceHighlight,
-  },
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', paddingHorizontal: 20 },
+  centerBox: { backgroundColor: Colors.surface, borderRadius: 20, overflow: 'hidden', paddingBottom: 10, minHeight: 400 },
+  headerControls: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: Colors.surfaceHighlight },
   cancelText: { color: Colors.textMuted, fontSize: 16 },
   titleText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
   doneText: { color: Colors.primary, fontSize: 16, fontWeight: 'bold' },
@@ -150,13 +135,5 @@ const styles = StyleSheet.create({
   yearText: { color: 'white', fontSize: 18, fontWeight: '500' },
   yearTextActive: { color: Colors.primary, fontWeight: 'bold', fontSize: 20 },
 
-  titleToggleBtn: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 8,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
-  },
+  titleToggleBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 15 },
 });

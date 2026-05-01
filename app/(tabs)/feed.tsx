@@ -7,6 +7,15 @@ import { Job } from '@/app/components/jobCard';
 import { useAlert } from '@/app/components/alertContext';
 import { ScrollableJobs } from '@/app/components/scrollableJobs';
 
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
 export default function FeedScreen() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -32,14 +41,15 @@ export default function FeedScreen() {
         locations!job_location_id ( city_name ),
         job_postings_candidates ( employee_id ) 
       `)
-      .eq('active', true)
-      .order('created_at', { ascending: false });
+      .eq('active', true);
 
     if (error) {
       console.error("Fetch error details:", error);
       showAlert('Error fetching jobs', error.message);
     } else {
-      setJobs(data || []);
+      const fetchedJobs = data || [];
+      const randomizedJobs = shuffleArray(fetchedJobs);
+      setJobs(randomizedJobs);
     }
 
     setIsLoading(false);

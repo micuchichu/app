@@ -228,42 +228,61 @@ export default function ExploreScreen() {
     const creatorName = item.employers?.profiles?.full_name || 'Anonymous';
     const imageSource = item.thumbnail_url ? { uri: item.thumbnail_url } : fallbackImage;
 
+    if (isService) {
+      return (
+        <TouchableOpacity 
+          style={[styles.gridCard, styles.serviceGridCard]} 
+          onPress={() => setSelectedService(item)}
+          activeOpacity={0.8}
+        >
+          <View style={styles.serviceTopRow}>
+             <View style={styles.serviceBadgeNew}>
+               <Text style={styles.serviceBadgeTextNew}>Service</Text>
+             </View>
+          </View>
+          
+          <View style={styles.serviceMiddleContent}>
+            <Text style={styles.serviceMainTitle} numberOfLines={3}>{item.title}</Text>
+            <Text style={styles.servicePriceNew}>
+                {item.price} {item.currencies?.currency_text || ''}
+            </Text>
+          </View>
+
+          <View style={styles.serviceBottomRow}>
+            <View style={styles.serviceProviderRow}>
+              <View style={styles.miniAvatar}>
+                 <User size={12} color="white" />
+              </View>
+              <Text style={styles.serviceEmployer} numberOfLines={1}>
+                @{creatorName.replace(/\s+/g, '').toLowerCase()}
+              </Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+      );
+    }
+
     return (
       <TouchableOpacity 
-        style={[styles.gridCard, isService && styles.serviceGridCard]} 
-        onPress={() => {
-           if (isService) {
-              setSelectedService(item);
-           } else {
-              setFeedStartId(item.id);
-           }
-        }}
+        style={styles.gridCard} 
+        onPress={() => setFeedStartId(item.id)}
+        activeOpacity={0.8}
       >
-        {/* Only render the image and overlay if it is a job */}
-        {!isService && (
-          <>
-            <Image source={imageSource} style={styles.gridCardImage} />
-            <View style={styles.gridCardOverlay} />
-          </>
-        )}
+        <Image source={imageSource} style={styles.gridCardImage} />
+        <View style={styles.gridCardOverlay} />
 
         <View style={styles.gridCardContent}>
           <View style={styles.gridCardTop}>
-             <View style={[styles.payBadgeSmall, isService && { backgroundColor: Colors.primary }]}>
+             <View style={styles.payBadgeSmall}>
                <Text style={styles.payBadgeTextSmall}>
-                 {isService ? 'Service' : `${item.pay_amount} ${item.currencies?.currency_text || ''}`}
+                 {item.pay_amount} {item.currencies?.currency_text || ''}
                </Text>
              </View>
           </View>
           
           <View style={styles.gridCardBottom}>
-            {isService && (
-                <Text style={{ color: '#4ade80', fontSize: 13, fontWeight: 'bold', marginBottom: 4 }}>
-                    {item.price} {item.currencies?.currency_text || ''}
-                </Text>
-            )}
-            <Text style={[styles.gridCardTitle, isService && styles.noTextShadow]} numberOfLines={2}>{item.title}</Text>
-            <Text style={[styles.gridCardEmployer, isService && styles.noTextShadow]} numberOfLines={1}>@{creatorName.replace(/\s+/g, '').toLowerCase()}</Text>
+            <Text style={styles.gridCardTitle} numberOfLines={2}>{item.title}</Text>
+            <Text style={styles.gridCardEmployer} numberOfLines={1}>@{creatorName.replace(/\s+/g, '').toLowerCase()}</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -491,16 +510,26 @@ const styles = StyleSheet.create({
   row: { justifyContent: 'space-between', marginBottom: 15, },
 
   gridCard: { width: '48%', aspectRatio: 0.75, borderRadius: 12, backgroundColor: '#18181b', overflow: 'hidden', borderWidth: 1, borderColor: '#27272a' },
-  serviceGridCard: { backgroundColor: '#1d1d1d', borderColor: '#3f3f46' }, 
+  
+  serviceGridCard: { backgroundColor: '#27272a', borderColor: '#3f3f46', borderTopWidth: 3, borderTopColor: Colors.primary || '#8b5cf6', justifyContent: 'space-between' }, 
+  serviceTopRow: { padding: 12, flexDirection: 'row', justifyContent: 'flex-start' },
+  serviceBadgeNew: { backgroundColor: 'rgba(139, 92, 246, 0.15)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  serviceBadgeTextNew: { color: '#d8b4fe', fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase' },
+  serviceMiddleContent: { flex: 1, justifyContent: 'center', paddingHorizontal: 12 },
+  serviceMainTitle: { color: 'white', fontSize: 16, fontWeight: 'bold', lineHeight: 22, marginBottom: 8 },
+  servicePriceNew: { color: '#4ade80', fontSize: 16, fontWeight: '800' },
+  serviceBottomRow: { padding: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' },
+  serviceProviderRow: { flexDirection: 'row', alignItems: 'center' },
+  miniAvatar: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#3f3f46', justifyContent: 'center', alignItems: 'center', marginRight: 6 },
+  serviceEmployer: { color: '#a1a1aa', fontSize: 12, fontWeight: '500', flexShrink: 1 },
+
   gridCardImage: { width: '100%', height: '100%', position: 'absolute', resizeMode: 'cover', },
   gridCardOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.35)', },
   gridCardContent: { flex: 1, justifyContent: 'space-between', padding: 10, },
   gridCardTop: { flexDirection: 'row', justifyContent: 'flex-start', },
-
   gridCardBottom: { justifyContent: 'flex-end', },
   gridCardTitle: { color: 'white', fontSize: 14, fontWeight: 'bold', marginBottom: 4, textShadowColor: 'rgba(0,0,0,0.9)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4, },
   gridCardEmployer: { color: '#d4d4d8', fontSize: 12, fontWeight: '500', textShadowColor: 'rgba(0,0,0,0.9)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4, },
-  noTextShadow: { textShadowColor: 'transparent', textShadowRadius: 0 },
 
   payBadgeSmall: { backgroundColor: '#27272a', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, overlayColor: 'rgba(0,0,0,0.6)', marginBottom: 6 },
   payBadgeTextSmall: { color: 'white', fontWeight: 'bold', fontSize: 12,},
