@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { X } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-import { supabase } from '@/app/lib/supabase';
-import { Colors } from '@/app/constants/colors';
-import { useAlert } from '@/app/components/alertContext';
-import { trackEvent } from '@/app/lib/ranking';
-import { Job } from '@/app/components/jobCard';
+import { useAlert } from '@/components/alertContext';
+import { Job } from '@/components/jobCard';
+import { Colors } from '@/constants/colors';
+import { trackEvent } from '@/lib/ranking';
+import { supabase } from '@/lib/supabase';
 
 interface BiddingModalProps {
   visible: boolean;

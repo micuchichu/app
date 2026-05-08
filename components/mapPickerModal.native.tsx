@@ -1,8 +1,8 @@
-import React, { useRef } from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Image } from 'react-native';
-import MapView from 'react-native-maps';
-import { MapPin, LocateFixed, X } from 'lucide-react-native';
 import * as Location from 'expo-location';
+import { LocateFixed, MapPin } from 'lucide-react-native';
+import React, { useRef } from 'react';
+import { ActivityIndicator, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import MapView from 'react-native-maps';
 import { useAlert } from './alertContext';
 
 export const MapPickerModal = ({ visible, region, onRegionChange, onClose, onConfirm }: any) => {

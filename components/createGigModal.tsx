@@ -1,15 +1,24 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { 
-  View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, 
-  Platform, ActivityIndicator, Modal, KeyboardAvoidingView, 
-  Animated, PanResponder, Dimensions 
+import { CheckCircle, ChevronDown, X } from 'lucide-react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+    ActivityIndicator,
+    Animated,
+    Dimensions,
+    KeyboardAvoidingView,
+    Modal,
+    PanResponder,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text, TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
-import { X, CheckCircle, ChevronDown } from 'lucide-react-native';
 
-import { supabase } from '@/app/lib/supabase';
-import { Colors } from '@/app/constants/colors';
-import { useAlert } from '@/app/components/alertContext';
-import { CurrencyDropdownModal } from '@/app/components/currencyDropdownModal';
+import { useAlert } from '@/components/alertContext';
+import { CurrencyDropdownModal } from '@/components/currencyDropdownModal';
+import { Colors } from '@/constants/colors';
+import { supabase } from '@/lib/supabase';
 import { getDefaultCurrency } from '../hooks/utils';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');

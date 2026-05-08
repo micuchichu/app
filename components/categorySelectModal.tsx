@@ -1,10 +1,15 @@
+import { Colors } from '@/constants/colors';
+import { Search, X } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { 
-  StyleSheet, Text, View, TouchableOpacity, TextInput, 
-  Modal, FlatList, ActivityIndicator 
+import {
+    ActivityIndicator,
+    FlatList,
+    Modal,
+    StyleSheet, Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
-import { X, Search } from 'lucide-react-native';
-import { Colors } from '@/app/constants/colors';
 
 export interface JobCategory {
   id: number;

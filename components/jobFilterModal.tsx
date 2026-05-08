@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform } from 'react-native';
-import { X, RotateCcw } from 'lucide-react-native';
 import Slider from '@react-native-community/slider';
+import { RotateCcw, X } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { Colors } from '@/app/constants/colors';
+import { Colors } from '@/constants/colors';
 
 export interface FilterState {
   distance: number; 

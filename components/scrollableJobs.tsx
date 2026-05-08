@@ -1,12 +1,12 @@
-import React, { useCallback, useState } from 'react';
-import { Dimensions, View, StyleSheet } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
+import React, { useCallback, useState } from 'react';
+import { Dimensions, StyleSheet, View } from 'react-native';
 
-import { supabase } from '@/app/lib/supabase';
-import { trackEvent } from '@/app/lib/ranking'; 
-import JobCard, { Job } from '@/app/components/jobCard';
-import { BiddingModal } from '@/app/components/biddingModal'; 
-import { useAlert } from '@/app/components/alertContext';
+import { useAlert } from '@/components/alertContext';
+import { BiddingModal } from '@/components/biddingModal';
+import JobCard, { Job } from '@/components/jobCard';
+import { trackEvent } from '@/lib/ranking';
+import { supabase } from '@/lib/supabase';
 
 const { height } = Dimensions.get('window');
 

@@ -1,19 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  StyleSheet, Text, View, TouchableOpacity, ScrollView, 
-  Platform, ActivityIndicator, TextInput, Alert 
+import React, { useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    Alert,
+    Platform,
+    ScrollView,
+    StyleSheet, Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
-import { User, LogOut, Star, Briefcase, Lock, Edit2, X, PlusCircle, ChevronDown, Layers, Trash2 } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { Briefcase, ChevronDown, Edit2, Layers, Lock, LogOut, PlusCircle, Star, Trash2, User, X } from 'lucide-react-native';
 
-import { supabase } from '@/app/lib/supabase';
-import { Colors } from '@/app/constants/colors';
-import { GlobalStyles } from '@/app/constants/globalStyles';
-import { useAlert } from '@/app/components/alertContext';
+import { useAlert } from '@/components/alertContext';
+import { Colors } from '@/constants/colors';
+import { GlobalStyles } from '@/constants/globalStyles';
+import { supabase } from '@/lib/supabase';
 
-import { CreateGigModal } from '@/app/components/createGigModal';
-import { CategorySelectModal, JobCategory } from '@/app/components/categorySelectModal';
+import { CategorySelectModal, JobCategory } from '@/components/categorySelectModal';
+import { CreateGigModal } from '@/components/createGigModal';
 
 export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);

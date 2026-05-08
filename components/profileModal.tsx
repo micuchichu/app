@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet, Animated, PanResponder, Dimensions, ScrollView, Platform, ActivityIndicator } from 'react-native';
-import { User, X, Star, BadgeCheck, MapPin, Calendar } from 'lucide-react-native';
-import { useRouter } from 'expo-router'; 
+import { useRouter } from 'expo-router';
+import { BadgeCheck, Calendar, MapPin, Star, User, X } from 'lucide-react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, Dimensions, Modal, PanResponder, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { supabase } from '@/app/lib/supabase';
-import { Colors } from '@/app/constants/colors';
+import { Colors } from '@/constants/colors';
+import { supabase } from '@/lib/supabase';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 

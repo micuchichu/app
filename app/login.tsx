@@ -1,11 +1,9 @@
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { supabase } from './lib/supabase';
+import { supabase } from '../lib/supabase';
 
-import { GlobalStyles } from './constants/globalStyles';
-import { Colors } from './constants/colors';
-import { useAlert } from '@/app/components/alertContext';
+import { useAlert } from '@/components/alertContext';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');

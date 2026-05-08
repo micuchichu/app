@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Modal, Platform, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Briefcase, Users, ChevronRight, X, Info, Heart, Send, Trash2, Star } from 'lucide-react-native';
+import { Briefcase, ChevronRight, Heart, Info, Send, Star, Trash2, Users } from 'lucide-react-native';
 
-import { supabase } from '@/app/lib/supabase';
-import { Colors } from '@/app/constants/colors';
+import { Colors } from '@/constants/colors';
+import { supabase } from '@/lib/supabase';
 
-import { Job } from '@/app/components/jobCard';
-import { JobPreviewModal } from '../components/jobPreviewModal';
-import { ProfileModal } from '@/app/components/profileModal';
-import { ApplicantReviewModal, Applicant } from '../components/applicantReviewModal';
-import InfoModal from '../components/infoModal';
-import { useAlert } from '../components/alertContext';
+import { Job } from '@/components/jobCard';
+import { ProfileModal } from '@/components/profileModal';
+import { useAlert } from '../../components/alertContext';
+import { Applicant, ApplicantReviewModal } from '../../components/applicantReviewModal';
+import InfoModal from '../../components/infoModal';
+import { JobPreviewModal } from '../../components/jobPreviewModal';
 
 interface MyJob {
   id: string; 

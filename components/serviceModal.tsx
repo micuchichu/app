@@ -1,12 +1,20 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { 
-  View, Text, StyleSheet, TouchableOpacity, ScrollView, 
-  Platform, Modal, Animated, PanResponder, Dimensions 
-} from 'react-native';
-import { X, User, Star, MessageCircle, Copy, Check } from 'lucide-react-native';
 import * as Clipboard from 'expo-clipboard';
+import { Check, Copy, MessageCircle, Star, User, X } from 'lucide-react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+    Animated,
+    Dimensions,
+    Modal,
+    PanResponder,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native';
 
-import { Colors } from '@/app/constants/colors';
+import { Colors } from '@/constants/colors';
 import { ProfileModal } from './profileModal';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');

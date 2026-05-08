@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
-import { supabase } from '@/app/lib/supabase';
-import { GlobalStyles } from '@/app/constants/globalStyles';
-import { Job } from '@/app/components/jobCard';
-import { useAlert } from '@/app/components/alertContext';
-import { ScrollableJobs } from '@/app/components/scrollableJobs';
+import { useAlert } from '@/components/alertContext';
+import { Job } from '@/components/jobCard';
+import { ScrollableJobs } from '@/components/scrollableJobs';
+import { GlobalStyles } from '@/constants/globalStyles';
+import { supabase } from '@/lib/supabase';
 
 const shuffleArray = <T,>(array: T[]): T[] => {
   const shuffled = [...array];

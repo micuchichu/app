@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useAlert } from '@/components/alertContext';
 import * as Location from 'expo-location';
+import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { useAlert } from '@/app/components/alertContext';
 
 export interface LocationRecord {
   id: number;

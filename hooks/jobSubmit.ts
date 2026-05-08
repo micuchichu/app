@@ -1,10 +1,10 @@
-import { useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
+import { useState } from 'react';
 
-import { supabase } from '../lib/supabase';
+import { useAlert } from '@/components/alertContext';
+import { JobCategory } from '@/components/categorySelectModal';
 import { uploadMediaToSupabase } from '../lib/mediaUpload';
-import { useAlert } from '@/app/components/alertContext';
-import { JobCategory } from '@/app/components/categorySelectModal';
+import { supabase } from '../lib/supabase';
 
 export const useJobSubmit = (locManager: any) => {
     const [title, setTitle] = useState('');

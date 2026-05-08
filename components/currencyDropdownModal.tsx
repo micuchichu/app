@@ -1,12 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  StyleSheet, Text, View, TouchableOpacity, 
-  ScrollView, TextInput, Modal 
-} from 'react-native';
 import { Search } from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
+import {
+    Modal,
+    ScrollView,
+    StyleSheet, Text,
+    TextInput,
+    TouchableOpacity,
+    View
+} from 'react-native';
 
-import { supabase } from '@/app/lib/supabase';
-import { getDefaultCurrency, Currency } from '@/app/hooks/utils';
+import { Currency, getDefaultCurrency } from '@/hooks/utils';
+import { supabase } from '@/lib/supabase';
 
 interface CurrencyDropdownModalProps {
   visible: boolean;

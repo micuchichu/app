@@ -1,6 +1,6 @@
+import { Colors } from '@/constants/colors';
 import React from 'react';
-import { Modal, StyleSheet, Text, TouchableOpacity, View, TouchableWithoutFeedback } from 'react-native';
-import { Colors } from '@/app/constants/colors';
+import { Modal, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 
 export interface AlertModalProps {
   visible: boolean;

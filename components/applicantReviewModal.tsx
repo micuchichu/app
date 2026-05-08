@@ -1,12 +1,22 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { 
-  View, Text, StyleSheet, FlatList, TouchableOpacity, 
-  ActivityIndicator, Modal, Platform, LayoutAnimation, UIManager, Animated, PanResponder, Dimensions
-} from 'react-native';
-import { User, X, Clock, Check, Star, MessageCircle, ChevronDown, Copy } from 'lucide-react-native';
 import * as Clipboard from 'expo-clipboard';
+import { Check, ChevronDown, Clock, Copy, MessageCircle, Star, User, X } from 'lucide-react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+    ActivityIndicator,
+    Animated,
+    Dimensions,
+    FlatList,
+    Modal,
+    PanResponder,
+    Platform,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    UIManager,
+    View
+} from 'react-native';
 
-import { Colors } from '@/app/constants/colors';
+import { Colors } from '@/constants/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 

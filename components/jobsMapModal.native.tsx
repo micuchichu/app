@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Modal, View, TouchableOpacity, StyleSheet, ActivityIndicator, Platform, Animated, PanResponder, Dimensions, Text } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
-import { ArrowLeft, MapPin, Filter, Compass, LocateFixed } from 'lucide-react-native';
 import * as Location from 'expo-location';
+import { ArrowLeft, Compass, Filter, LocateFixed, MapPin } from 'lucide-react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, Dimensions, Modal, PanResponder, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
 
-import { supabase } from '@/app/lib/supabase';
-import { Colors } from '@/app/constants/colors';
-import { JobFilterModal, FilterState } from './jobFilterModal';
+import { Colors } from '@/constants/colors';
+import { supabase } from '@/lib/supabase';
+import { FilterState, JobFilterModal } from './jobFilterModal';
 import MapBottomSheet from './mapBottomSheet';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');

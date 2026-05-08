@@ -1,7 +1,7 @@
+import { Colors } from '@/constants/colors';
+import { Bookmark, Briefcase, DollarSign, MapPin, Navigation, Sparkles, Users, X } from 'lucide-react-native';
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, Image, ScrollView, Dimensions } from 'react-native';
-import { X, MapPin, Users, Bookmark, Briefcase, Sparkles, Navigation, DollarSign } from 'lucide-react-native';
-import { Colors } from '@/app/constants/colors';
+import { Animated, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 

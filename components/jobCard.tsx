@@ -1,18 +1,24 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  View, Text, Image, TouchableOpacity, StyleSheet, Dimensions, 
-  Pressable, Animated
+import { LinearGradient } from 'expo-linear-gradient';
+import { Briefcase, Heart, MapPin, Pause, Play, Send, User, Users } from 'lucide-react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+    Animated,
+    Dimensions,
+    Image,
+    Pressable,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
-import { Briefcase, MapPin, User, Send, Heart, Users, Play, Pause } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient'; 
 
 import { useVideoPlayer, VideoView } from 'expo-video';
 
-import { supabase } from '@/app/lib/supabase';
-import { trackEvent } from '@/app/lib/ranking'; 
-import { Colors } from '@/app/constants/colors'; 
+import { Colors } from '@/constants/colors';
+import { trackEvent } from '@/lib/ranking';
+import { supabase } from '@/lib/supabase';
 
-import { ProfileModal } from '@/app/components/profileModal'; 
+import { ProfileModal } from '@/components/profileModal';
 import { useAlert } from './alertContext';
 
 const { width, height } = Dimensions.get('window');

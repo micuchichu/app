@@ -2,8 +2,8 @@ import { Session } from '@supabase/supabase-js';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { supabase } from './lib/supabase';
-import { AlertProvider } from './components/alertContext';
+import { AlertProvider } from '../components/alertContext';
+import { supabase } from '../lib/supabase';
 
 export const unstable_settings = {
   initialRouteName: 'login',
