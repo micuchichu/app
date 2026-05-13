@@ -1,8 +1,8 @@
-import React from 'react';
-import { StyleSheet, Platform } from 'react-native';
-import { withLayoutContext } from 'expo-router';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
-import { Home, Search, PlusSquare, User, Table } from 'lucide-react-native';
+import { withLayoutContext } from 'expo-router';
+import { Home, PlusSquare, Search, Table, User } from 'lucide-react-native';
+import React from 'react';
+import { Platform, StyleSheet } from 'react-native';
 
 const MaterialTopTabs = createMaterialTopTabNavigator();
 const SwipeableTabs = withLayoutContext(MaterialTopTabs.Navigator);

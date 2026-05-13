@@ -1,7 +1,8 @@
+import { ensureWebTestAuth } from '@/lib/webTestAuth';
 import { Session } from '@supabase/supabase-js';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Platform, View } from 'react-native';
 import { AlertProvider } from '../components/alertContext';
 import { supabase } from '../lib/supabase';
 
@@ -15,17 +16,24 @@ export default function RootLayout() {
   const router = useRouter();
   const segments = useSegments();
 
-
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const init = async () => {
+      
+      if (Platform.OS === 'web') {
+        await ensureWebTestAuth();
+      }
+
+      
+      const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
       setIsInitialized(true);
-    });
-    
+    };
+
+    init();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
-
 
     return () => subscription.unsubscribe();
   }, []);
