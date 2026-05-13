@@ -1,7 +1,6 @@
 import { FlashList } from '@shopify/flash-list';
 import React, { useCallback, useState } from 'react';
-import { Dimensions, Platform, ScrollView, StyleSheet, View } from 'react-native';
-
+import { Dimensions, StyleSheet, View } from 'react-native';
 
 import { useAlert } from '@/components/alertContext';
 import { BiddingModal } from '@/components/biddingModal';
@@ -25,8 +24,6 @@ export const ScrollableJobs = ({ jobs, userId, isLoading = false, onRefresh, ini
 
   const initialIndex = initialJobId ? Math.max(0, jobs.findIndex(j => j.id === initialJobId)) : 0;
   const [activeIndex, setActiveIndex] = useState(initialIndex);
-
-  
 
   const handleApply = async (job: Job) => {
     if (!userId) {
@@ -92,11 +89,7 @@ export const ScrollableJobs = ({ jobs, userId, isLoading = false, onRefresh, ini
       const handle = `@${employerName.replace(/\s+/g, '').toLowerCase()}`;
       showAlert('Applied!', `Your application to ${handle} has been sent successfully.`);
     }
-
-
-    
   };
-  
 
   const handleViewableChange = useCallback(({ viewableItems }: any) => {
     if (viewableItems.length > 0) {
@@ -105,41 +98,6 @@ export const ScrollableJobs = ({ jobs, userId, isLoading = false, onRefresh, ini
     if (!userId) return;
     viewableItems.forEach((vi: any) => trackEvent(userId, vi.item.id, 'view'));
   }, [userId]);
-
- if (Platform.OS === 'web') {
-    return (
-      <View style={styles.container}>
-        <ScrollView
-          style={{ flex: 1 }}
-          // @ts-ignore — web-only style
-          contentContainerStyle={{ scrollSnapType: 'y mandatory' }}
-          showsVerticalScrollIndicator={false}
-        >
-          {jobs.map((item, index) => (
-            <View
-              key={item.id.toString()}
-              style={[styles.snapItem]}
-              // @ts-ignore
-              onLayout={() => {}}
-            >
-              <JobCard
-                item={item}
-                onApply={() => handleApply(item)}
-                userId={userId}
-                isActive={index === activeIndex}
-              />
-            </View>
-          ))}
-        </ScrollView>
-        <BiddingModal 
-        visible={!!biddingJob}
-        job={biddingJob}
-        userId={userId}
-        onClose={() => setBiddingJob(null)}
-      />
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
@@ -177,6 +135,5 @@ export const ScrollableJobs = ({ jobs, userId, isLoading = false, onRefresh, ini
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'black' },
-  snapItem: { height: height, scrollSnapAlign: 'start' } as any,
-} as any);
+  container: { flex: 1, backgroundColor: 'black' }
+});
